@@ -130,21 +130,33 @@ const signalStyles = {
     color: "text-success-500",
     border: "border-success-400/30",
     label: "Bullish — Looking Good",
-    icon: "📈",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
   },
   bearish: {
     bg: "bg-red-50",
     color: "text-red-500",
     border: "border-red-200",
     label: "Bearish — Use Caution",
-    icon: "📉",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
+      </svg>
+    ),
   },
   neutral: {
     bg: "bg-yellow-50",
     color: "text-yellow-600",
     border: "border-yellow-200",
     label: "Neutral — Wait & Watch",
-    icon: "➡️",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+      </svg>
+    ),
   },
 };
 
@@ -214,7 +226,7 @@ function StockContent() {
           className={`rounded-2xl p-5 border ${signal.bg} ${signal.border}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">{signal.icon}</span>
+            <span className={signal.color}>{signal.icon}</span>
             <h3 className={`text-sm font-bold ${signal.color}`}>
               {signal.label}
             </h3>
