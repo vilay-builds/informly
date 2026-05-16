@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { NewsCard } from "@/components/NewsCard";
 import { FeaturedCard } from "@/components/FeaturedCard";
 import { MarketCard } from "@/components/MarketCard";
+import { StockTicker } from "@/components/StockTicker";
 import { BottomNav } from "@/components/BottomNav";
 
 const featuredStory = {
@@ -100,12 +101,10 @@ export default function Home() {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-text-primary tracking-tight">
-              informly
+            <h1 className="text-xl font-bold text-text-primary tracking-tight font-[family-name:var(--font-display)]">
+              Nova
             </h1>
-            <p className="text-xs text-text-tertiary">
-              Friday, May 16
-            </p>
+            <p className="text-xs text-text-tertiary">Saturday, May 17</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -129,6 +128,9 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Stock Ticker */}
+      <StockTicker />
+
       <motion.main
         variants={stagger}
         initial="initial"
@@ -140,8 +142,8 @@ export default function Home() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-bold text-text-primary">
-            Good afternoon ☀️
+          <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)]">
+            Good afternoon
           </h2>
           <p className="text-sm text-text-secondary mt-1">
             Here&apos;s what&apos;s happening in the world today
@@ -197,7 +199,7 @@ export default function Home() {
         </section>
       </motion.main>
 
-      <BottomNav />
+      <BottomNav active="feed" />
     </div>
   );
 }
