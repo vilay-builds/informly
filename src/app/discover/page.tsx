@@ -138,9 +138,11 @@ export default function DiscoverPage() {
             }}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
+            dragDirectionLock
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
-            className="absolute inset-x-4 top-0 bottom-20 touch-none"
+            className="absolute inset-x-4 top-0 bottom-20 touch-none select-none"
+            style={{ touchAction: "pan-x" }}
           >
             <DiscoverCard
               {...discoverStories[currentIndex]}
