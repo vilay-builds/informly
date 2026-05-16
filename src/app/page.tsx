@@ -142,12 +142,12 @@ export default function Home() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)]">
-            Good afternoon
-          </h2>
-          <p className="text-sm text-text-secondary mt-1">
-            Here&apos;s what&apos;s happening in the world today
+          <p className="text-sm text-text-tertiary">
+            Good afternoon, Vilay
           </p>
+          <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)]">
+            Your News Feed
+          </h2>
         </motion.section>
 
         {/* Featured Story */}
