@@ -2,19 +2,10 @@
 
 import { motion } from "framer-motion";
 import { NewsCard } from "@/components/NewsCard";
-import { FeaturedCard } from "@/components/FeaturedCard";
+import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 import { MarketCard } from "@/components/MarketCard";
 import { StockTicker } from "@/components/StockTicker";
 import { BottomNav } from "@/components/BottomNav";
-
-const featuredStory = {
-  category: "AI & Technology",
-  title: "OpenAI announces new reasoning model that can solve PhD-level problems",
-  summary:
-    "The latest advancement in AI reasoning could transform how scientists approach complex research challenges.",
-  gradient: "linear-gradient(135deg, #5b6ef2 0%, #7b93f8 50%, #a4b8fc 100%)",
-  timeAgo: "2h ago",
-};
 
 const marketData = [
   {
@@ -49,40 +40,44 @@ const newsStories = [
     categoryColor: "#22c55e",
     title: "EU passes landmark carbon reduction law affecting global supply chains",
     summary:
-      "New regulations will require companies to track and reduce emissions across their entire production process, impacting how everyday products are made and shipped.",
+      "New regulations will require companies to track and reduce emissions across their entire production process.",
     timeAgo: "3h ago",
     readTime: "4 min",
     source: "Reuters",
+    image: "https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&q=80",
   },
   {
     category: "Economy",
     categoryColor: "#5b6ef2",
     title: "Federal Reserve signals pause on interest rate changes through summer",
     summary:
-      "This means borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months.",
+      "Borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months.",
     timeAgo: "5h ago",
     readTime: "3 min",
     source: "AP News",
+    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80",
   },
   {
     category: "Health",
     categoryColor: "#f04e1a",
     title: "Breakthrough weight-loss medication shows promise in treating sleep apnea",
     summary:
-      "Researchers found that patients using GLP-1 drugs experienced significant improvements in breathing during sleep, opening new treatment possibilities.",
+      "Patients using GLP-1 drugs experienced significant improvements in breathing during sleep.",
     timeAgo: "6h ago",
     readTime: "5 min",
     source: "Nature",
+    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=400&q=80",
   },
   {
     category: "World",
     categoryColor: "#8b5cf6",
     title: "Japan introduces four-day work week pilot for government employees",
     summary:
-      "The initiative aims to boost declining birth rates by giving workers more time for family, and could reshape work culture across Asia.",
+      "The initiative aims to boost declining birth rates by giving workers more time for family.",
     timeAgo: "8h ago",
     readTime: "3 min",
     source: "BBC",
+    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80",
   },
 ];
 
@@ -150,10 +145,8 @@ export default function Home() {
           </h2>
         </motion.section>
 
-        {/* Featured Story */}
-        <section>
-          <FeaturedCard {...featuredStory} />
-        </section>
+        {/* Featured Carousel */}
+        <FeaturedCarousel />
 
         {/* Market Movers */}
         <section>

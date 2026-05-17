@@ -75,16 +75,16 @@ export default function ArticlePage() {
   const content = explainedContent[level];
 
   return (
-    <div className="min-h-screen bg-background pb-12">
+    <div className="min-h-screen pb-12">
       {/* Hero */}
       <div
-        className="relative h-[260px] flex items-end p-6"
+        className="relative h-[320px] flex items-end p-6 bg-cover bg-center"
         style={{
-          background:
-            "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+          backgroundImage:
+            "url(https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=1200&q=85)",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
 
         <Link
           href="/"
