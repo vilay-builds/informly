@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
-import Link from "next/link";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { useWatchlist } from "@/lib/persistence";
 import { getStocksByRegion } from "@/lib/content/stocks";
 import { MarketsSkeleton } from "@/components/skeletons/MarketsSkeleton";
-import { Pill } from "@/components/ui";
+import { WatchlistCarousel } from "@/components/WatchlistCarousel";
 import { fadeInUp, stagger } from "@/lib/motion";
 
 type Region = "us" | "india";
@@ -54,39 +53,6 @@ const summaries = {
   },
 };
 
-const signalConfig = {
-  bullish: {
-    label: "Bullish",
-    color: "text-success-500",
-    bg: "bg-success-400/15",
-    icon: (
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
-  },
-  bearish: {
-    label: "Bearish",
-    color: "text-red-500",
-    bg: "bg-red-100",
-    icon: (
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-      </svg>
-    ),
-  },
-  neutral: {
-    label: "Neutral",
-    color: "text-yellow-600",
-    bg: "bg-yellow-100",
-    icon: (
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-      </svg>
-    ),
-  },
-};
-
 export default function MarketsPage() {
   const { prefs, update, hydrated } = useUserPreferences();
   const [region, setRegion] = useState<Region>("india");
@@ -110,7 +76,6 @@ export default function MarketsPage() {
   const currentStocks = allRegionStocks.filter((s) =>
     watchlist.includes(s.ticker)
   );
-  const currencySymbol = region === "india" ? "INR " : "$";
 
   const toggleRegion = (r: Region) => {
     setRegion(r);
@@ -285,81 +250,25 @@ export default function MarketsPage() {
             </div>
           </motion.section>
 
-          <motion.section variants={fadeInUp}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-text-primary">
-                Your Watchlist
-              </h3>
-              <span className="text-xs text-text-tertiary">
-                {currentStocks.length} stocks
-              </span>
-            </div>
-
+          <motion.div variants={fadeInUp}>
             {currentStocks.length === 0 ? (
-              <div className="bg-surface rounded-2xl border border-border p-6 text-center">
-                <p className="text-sm text-text-secondary mb-3">
-                  No stocks in your {region === "us" ? "US" : "India"} watchlist
-                </p>
-                <p className="text-xs text-text-tertiary">
-                  Open any stock and tap the star to add it.
-                </p>
-              </div>
+              <section>
+                <h3 className="text-sm font-semibold text-text-primary mb-3">
+                  Your Watchlist
+                </h3>
+                <div className="bg-surface rounded-2xl border border-border p-6 text-center">
+                  <p className="text-sm text-text-secondary mb-3">
+                    No stocks in your {region === "us" ? "US" : "India"} watchlist
+                  </p>
+                  <p className="text-xs text-text-tertiary">
+                    Open any stock and tap the star to add it.
+                  </p>
+                </div>
+              </section>
             ) : (
-              <div className="space-y-3">
-                {currentStocks.map((stock) => {
-                  const signal = signalConfig[stock.signal];
-                  const change = stock.change;
-                  return (
-                    <Link
-                      key={stock.ticker}
-                      href={`/stock/${stock.ticker}`}
-                      className="block bg-surface rounded-2xl p-4 border border-border transition-shadow hover:shadow-md"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className="text-sm font-bold text-text-primary">
-                            {stock.ticker}
-                          </span>
-                          <p className="text-xs text-text-tertiary">{stock.name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-text-primary">
-                            {currencySymbol}
-                            {stock.price.toLocaleString(
-                              region === "india" ? "en-IN" : "en-US",
-                              { maximumFractionDigits: 2 }
-                            )}
-                          </p>
-                          <p
-                            className={`text-xs font-medium ${
-                              change >= 0
-                                ? "text-success-500"
-                                : "text-red-500"
-                            }`}
-                          >
-                            {change >= 0 ? "+" : ""}
-                            {change}%
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-text-secondary leading-relaxed mb-2 line-clamp-2">
-                        {stock.signalReason}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Pill
-                          icon={signal.icon}
-                          size="xs"
-                          className={`${signal.bg} ${signal.color}`}
-                        >
-                          {signal.label}
-                        </Pill>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+              <WatchlistCarousel stocks={currentStocks} region={region} />
             )}
-          </motion.section>
+          </motion.div>
         </motion.main>
       )}
 
