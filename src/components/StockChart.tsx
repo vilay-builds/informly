@@ -42,20 +42,41 @@ export function StockChart({
       return [x, y] as [number, number];
     });
 
-    // Catmull-Rom → cubic Bezier
+    // Monotone cubic Hermite interpolation — prevents overshoot.
+    // This is the same algorithm d3-shape uses for curveMonotoneX.
+    const n = pts.length;
+    const dxs: number[] = [];
+    const slopes: number[] = [];
+    for (let i = 0; i < n - 1; i++) {
+      const dx = pts[i + 1][0] - pts[i][0];
+      const dy = pts[i + 1][1] - pts[i][1];
+      dxs.push(dx);
+      slopes.push(dx === 0 ? 0 : dy / dx);
+    }
+
+    const tangents: number[] = new Array(n);
+    tangents[0] = slopes[0] ?? 0;
+    tangents[n - 1] = slopes[n - 2] ?? 0;
+    for (let i = 1; i < n - 1; i++) {
+      const m0 = slopes[i - 1];
+      const m1 = slopes[i];
+      if (m0 * m1 <= 0) {
+        tangents[i] = 0; // sign change → flatten to prevent overshoot
+      } else {
+        const w1 = 2 * dxs[i] + dxs[i - 1];
+        const w2 = dxs[i] + 2 * dxs[i - 1];
+        tangents[i] = (w1 + w2) / (w1 / m0 + w2 / m1);
+      }
+    }
+
     let d = `M ${pts[0][0].toFixed(3)} ${pts[0][1].toFixed(3)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-
-      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-
-      d += ` C ${c1x.toFixed(3)} ${c1y.toFixed(3)}, ${c2x.toFixed(3)} ${c2y.toFixed(3)}, ${p2[0].toFixed(3)} ${p2[1].toFixed(3)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const dx = dxs[i] / 3;
+      const c1x = pts[i][0] + dx;
+      const c1y = pts[i][1] + tangents[i] * dx;
+      const c2x = pts[i + 1][0] - dx;
+      const c2y = pts[i + 1][1] - tangents[i + 1] * dx;
+      d += ` C ${c1x.toFixed(3)} ${c1y.toFixed(3)}, ${c2x.toFixed(3)} ${c2y.toFixed(3)}, ${pts[i + 1][0].toFixed(3)} ${pts[i + 1][1].toFixed(3)}`;
     }
 
     const fill = `${d} L 100 100 L 0 100 Z`;
