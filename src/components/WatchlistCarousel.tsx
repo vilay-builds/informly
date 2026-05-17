@@ -62,7 +62,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   if (stocks.length === 0) return null;
 
   return (
-    <section>
+    <section className="pb-10">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Your Watchlist

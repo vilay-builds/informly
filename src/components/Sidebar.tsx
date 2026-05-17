@@ -3,8 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ReactNode } from "react";
-import { useTheme } from "@/components/ThemeProvider";
-import { themes } from "@/lib/themes";
 import { tap } from "@/lib/motion";
 
 interface NavItem {
@@ -47,16 +45,6 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    key: "saved",
-    label: "Saved",
-    href: "/saved",
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-    ),
-  },
-  {
     key: "search",
     label: "Search",
     href: "/search",
@@ -73,24 +61,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ active = "feed" }: SidebarProps) {
-  const { themeKey } = useTheme();
-  const theme = themes[themeKey];
-
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 glass-strong border-r border-white/30 z-30 flex-col">
       <div className="px-6 pt-7 pb-5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md"
-            style={{
-              background: `linear-gradient(135deg, ${theme.primary[400]}, ${theme.primary[600]})`,
-            }}
-          >
-            <span className="text-base font-bold text-white font-[family-name:var(--font-display)]">
-              N
-            </span>
-          </div>
-          <span className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
+        <div className="flex items-center">
+          <span className="text-3xl font-bold text-text-primary font-[family-name:var(--font-display)] tracking-tight">
             Nova
           </span>
         </div>

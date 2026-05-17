@@ -14,14 +14,12 @@ const ROUTE_KEY: Record<string, string> = {
   "/": "feed",
   "/discover": "discover",
   "/markets": "markets",
-  "/saved": "saved",
   "/search": "search",
   "/settings": "you",
   "/stock": "markets",
   "/article": "feed",
   "/brief": "feed",
   "/history": "you",
-  "/notifications": "feed",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {

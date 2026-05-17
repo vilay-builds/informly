@@ -33,7 +33,7 @@ export function FeaturedCarousel() {
   };
 
   return (
-    <section>
+    <section className="pb-6">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-primary">For You</h3>
         <div className="flex items-center gap-1">

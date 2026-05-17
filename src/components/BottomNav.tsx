@@ -37,16 +37,6 @@ const navItems = [
     ),
   },
   {
-    label: "Saved",
-    href: "/saved",
-    key: "saved",
-    icon: (
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-    ),
-  },
-  {
     label: "You",
     href: "/settings",
     key: "you",

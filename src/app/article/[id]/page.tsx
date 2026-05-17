@@ -5,7 +5,6 @@ import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { UnderstandingSlider } from "@/components/UnderstandingSlider";
-import { useSavedArticles } from "@/lib/savedArticles";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { useReadingHistory } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
@@ -26,7 +25,6 @@ export default function ArticlePage({
   if (!article) notFound();
 
   const { prefs } = useUserPreferences();
-  const { isSaved, toggle } = useSavedArticles();
   const { record } = useReadingHistory();
   const toast = useToast();
 
@@ -65,25 +63,8 @@ export default function ArticlePage({
   }, [article, record]);
 
   const content = article.explained[level];
-  const saved = isSaved(article.id);
   const readTime = getArticleReadTime(article);
   const related = getRelatedArticles(article);
-
-  const handleToggleSave = () => {
-    toggle({
-      id: article.id,
-      title: article.title,
-      summary: article.aiSummary,
-      category: article.category,
-      categoryColor: article.categoryColor,
-      source: article.source,
-      image: article.image,
-    });
-    toast.show({
-      message: saved ? "Removed from saved" : "Saved to your library",
-      variant: "success",
-    });
-  };
 
   const handleShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -138,23 +119,6 @@ export default function ArticlePage({
           >
             <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleToggleSave}
-            aria-label={saved ? "Remove from saved" : "Save article"}
-            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center"
-          >
-            <svg
-              width="18"
-              height="18"
-              fill={saved ? "white" : "none"}
-              viewBox="0 0 24 24"
-              stroke="white"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
           </motion.button>
         </div>
