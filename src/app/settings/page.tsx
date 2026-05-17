@@ -85,7 +85,6 @@ export default function SettingsPage() {
   const [selectedCategories, setSelectedCategories] = useState(
     categories.map((c) => c.selected)
   );
-  const [marketRegion, setMarketRegion] = useState("both");
 
   const toggleCategory = (index: number) => {
     setSelectedCategories((prev) => {
@@ -205,36 +204,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Market Region */}
-        <section>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Market Region
-          </h3>
-          <div className="bg-surface rounded-2xl p-4 border border-border">
-            <p className="text-xs text-text-secondary mb-4">
-              Choose which stock markets to show in your ticker and Markets tab.
-            </p>
-            <div className="flex bg-surface-secondary rounded-xl p-1">
-              {[
-                { key: "us", label: "US Only" },
-                { key: "both", label: "US & India" },
-                { key: "india", label: "India Only" },
-              ].map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setMarketRegion(r.key)}
-                  className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
-                    marketRegion === r.key
-                      ? "bg-surface text-text-primary shadow-sm"
-                      : "text-text-tertiary"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* News Categories */}
         <section>
