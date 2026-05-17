@@ -338,7 +338,12 @@ function StockContent() {
           transition={{ delay: 0.1 }}
           className="bg-surface rounded-3xl p-5 border border-border"
         >
-          <StockChart data={chartData} isPositive={isPositive} height={200} />
+          <StockChart
+            data={chartData}
+            isPositive={isPositive}
+            height={200}
+            currency={stock.currency}
+          />
 
           {/* Range pills */}
           <div className="flex items-center gap-1.5 mt-4 bg-surface-secondary rounded-full p-1">
