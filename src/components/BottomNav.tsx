@@ -53,7 +53,7 @@ interface BottomNavProps {
 
 export function BottomNav({ active = "feed" }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-surface/80 backdrop-blur-xl border-t border-border z-50">
+    <nav className="fixed bottom-0 left-0 right-0 glass-strong border-t border-white/30 z-50">
       <div className="max-w-lg mx-auto flex items-center justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
         {navItems.map((item) => (
           <Link key={item.key} href={item.href}>

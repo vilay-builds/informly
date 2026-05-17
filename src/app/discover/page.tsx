@@ -2,168 +2,243 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { DiscoverCard } from "@/components/DiscoverCard";
 import { BottomNav } from "@/components/BottomNav";
+import Link from "next/link";
 
-const discoverStories = [
+interface Card {
+  category: string;
+  title: string;
+  summary: string;
+  source: string;
+  timeAgo: string;
+  bg: string;
+  textColor: string;
+  accentColor: string;
+}
+
+const cards: Card[] = [
   {
     category: "AI & Technology",
-    categoryColor: "#7b93f8",
     title: "OpenAI announces new reasoning model that can solve PhD-level problems",
     summary:
       "The latest advancement in AI reasoning could transform how scientists approach complex research challenges. This model can break down multi-step problems that previously stumped even the most advanced systems.",
     source: "The Verge",
     timeAgo: "2h ago",
-    gradient: "linear-gradient(160deg, #1a1a2e 0%, #3d42cb 50%, #5b6ef2 100%)",
+    bg: "#fef3c7",
+    textColor: "#451a03",
+    accentColor: "#a16207",
   },
   {
     category: "Climate",
-    categoryColor: "#4ade80",
     title: "EU passes landmark carbon reduction law affecting global supply chains",
     summary:
-      "New regulations will require companies to track and reduce emissions across their entire production process. This affects how everyday products are made, shipped, and sold worldwide.",
+      "New regulations will require companies to track and reduce emissions across their entire production process. This affects how everyday products are made and shipped worldwide.",
     source: "Reuters",
     timeAgo: "3h ago",
-    gradient: "linear-gradient(160deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+    bg: "#dcfce7",
+    textColor: "#14532d",
+    accentColor: "#15803d",
   },
   {
-    category: "Economy",
-    categoryColor: "#fbbf24",
+    category: "Markets",
     title: "Federal Reserve signals pause on interest rate changes through summer",
     summary:
-      "Borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months. Here's what that means for your wallet and the broader economy.",
-    source: "AP News",
+      "This means borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months. Markets are responding cautiously to the news.",
+    source: "Bloomberg",
     timeAgo: "5h ago",
-    gradient: "linear-gradient(160deg, #1a1a2e 0%, #2d1b69 50%, #4a1d96 100%)",
+    bg: "#dbeafe",
+    textColor: "#1e3a8a",
+    accentColor: "#1d4ed8",
   },
   {
     category: "Health",
-    categoryColor: "#f87171",
-    title: "Breakthrough medication shows promise in treating sleep apnea",
+    title: "Breakthrough weight-loss medication shows promise in treating sleep apnea",
     summary:
-      "Researchers found that patients using GLP-1 drugs experienced significant improvements in breathing during sleep, potentially helping millions who suffer from this condition.",
+      "Researchers found that patients using GLP-1 drugs experienced significant improvements in breathing during sleep, opening new treatment possibilities for millions.",
     source: "Nature",
     timeAgo: "6h ago",
-    gradient: "linear-gradient(160deg, #1a1a2e 0%, #7f1d1d 50%, #b91c1c 100%)",
+    bg: "#fce7f3",
+    textColor: "#831843",
+    accentColor: "#be185d",
   },
   {
     category: "World",
-    categoryColor: "#c084fc",
     title: "Japan introduces four-day work week pilot for government employees",
     summary:
-      "The initiative aims to boost declining birth rates by giving workers more time for family. If successful, it could reshape work culture across Asia and inspire similar programs globally.",
+      "The initiative aims to boost declining birth rates by giving workers more time for family, and could reshape work culture across Asia.",
     source: "BBC",
     timeAgo: "8h ago",
-    gradient: "linear-gradient(160deg, #1a1a2e 0%, #312e81 50%, #4c1d95 100%)",
+    bg: "#e9d5ff",
+    textColor: "#581c87",
+    accentColor: "#7e22ce",
   },
   {
     category: "Business",
-    categoryColor: "#fb923c",
-    title: "Spotify reaches 700 million users as podcasting strategy pays off",
+    title: "Tesla's robotaxi service launches in three US cities this summer",
     summary:
-      "The audio streaming giant credits its growth to exclusive podcast deals and AI-powered recommendations that keep users engaged longer than ever before.",
-    source: "Bloomberg",
-    timeAgo: "10h ago",
-    gradient: "linear-gradient(160deg, #1a1a2e 0%, #064e3b 50%, #047857 100%)",
+      "Riders in Austin, Phoenix, and Las Vegas will be the first to hail fully autonomous Tesla rides through the company's app.",
+    source: "TechCrunch",
+    timeAgo: "12h ago",
+    bg: "#fed7aa",
+    textColor: "#7c2d12",
+    accentColor: "#c2410c",
   },
 ];
 
 export default function DiscoverPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const constraintsRef = useRef(null);
 
-  const paginate = (newDirection: number) => {
-    const nextIndex = currentIndex + newDirection;
-    if (nextIndex >= 0 && nextIndex < discoverStories.length) {
-      setDirection(newDirection);
-      setCurrentIndex(nextIndex);
+  const handleDragEnd = (
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    const threshold = 60;
+    if (info.offset.x < -threshold && activeIndex < cards.length - 1) {
+      setActiveIndex(activeIndex + 1);
+    } else if (info.offset.x > threshold && activeIndex > 0) {
+      setActiveIndex(activeIndex - 1);
     }
-  };
-
-  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.y < -threshold && info.velocity.y < -100) {
-      paginate(1);
-    } else if (info.offset.y > threshold && info.velocity.y > 100) {
-      paginate(-1);
-    }
-  };
-
-  const variants = {
-    enter: (direction: number) => ({
-      y: direction > 0 ? "100%" : "-100%",
-      opacity: 0.5,
-    }),
-    center: {
-      y: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      y: direction > 0 ? "-100%" : "100%",
-      opacity: 0.5,
-    }),
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="relative z-50 px-5 pt-4 pb-3 flex items-center justify-between bg-background">
-        <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
-          Discover
-        </h1>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-tertiary">
-            {currentIndex + 1} / {discoverStories.length}
-          </span>
+    <div className="h-[100dvh] flex flex-col overflow-hidden">
+      <header className="relative z-30 px-5 pt-4 pb-3 flex items-center justify-between glass-strong border-b border-white/30">
+        <div>
+          <p className="text-xs text-text-tertiary">Swipe to explore</p>
+          <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
+            Discover
+          </h1>
         </div>
-      </header>
-
-      {/* Swipeable cards container */}
-      <div
-        ref={containerRef}
-        className="flex-1 relative px-4 pb-20 overflow-hidden"
-      >
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              y: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
-            }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragDirectionLock
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
-            className="absolute inset-x-4 top-0 bottom-20 touch-none select-none"
-            style={{ touchAction: "pan-x" }}
-          >
-            <DiscoverCard
-              {...discoverStories[currentIndex]}
-              index={currentIndex}
-            />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Progress dots */}
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          {discoverStories.map((_, i) => (
+        <div className="flex items-center gap-1.5">
+          {cards.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === currentIndex
-                  ? "w-6 bg-primary-500"
-                  : "w-1.5 bg-text-tertiary/30"
+              className={`h-1 rounded-full transition-all ${
+                i === activeIndex
+                  ? "w-6 bg-text-primary"
+                  : "w-1 bg-text-tertiary/40"
               }`}
             />
           ))}
         </div>
+      </header>
+
+      <div
+        ref={constraintsRef}
+        className="flex-1 relative overflow-hidden flex items-center justify-center"
+        style={{ perspective: "1200px" }}
+      >
+        {/* Stacked Cards */}
+        <AnimatePresence initial={false}>
+          {cards.map((card, i) => {
+            const offset = i - activeIndex;
+            const isActive = offset === 0;
+            const isVisible = Math.abs(offset) <= 2;
+
+            if (!isVisible) return null;
+
+            return (
+              <motion.div
+                key={i}
+                drag={isActive ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.6}
+                onDragEnd={isActive ? handleDragEnd : undefined}
+                initial={false}
+                animate={{
+                  x: offset * 24,
+                  y: Math.abs(offset) * 16,
+                  scale: 1 - Math.abs(offset) * 0.06,
+                  rotate: offset * -3,
+                  opacity: Math.abs(offset) > 1 ? 0.5 : 1,
+                  zIndex: cards.length - Math.abs(offset),
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
+                whileDrag={{ rotate: 0, scale: 1.02 }}
+                className="absolute w-[88%] max-w-md h-[72%] rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing"
+                style={{
+                  background: card.bg,
+                  boxShadow:
+                    "0 30px 60px -15px rgba(0, 0, 0, 0.25), 0 8px 20px -8px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                <div className="h-full flex flex-col p-7">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-wider"
+                      style={{ color: card.accentColor }}
+                    >
+                      {card.category}
+                    </span>
+                    <span
+                      className="text-[11px]"
+                      style={{ color: card.accentColor, opacity: 0.7 }}
+                    >
+                      {card.timeAgo}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h2
+                    className="text-[1.7rem] leading-[1.1] font-bold font-[family-name:var(--font-display)] mb-5"
+                    style={{ color: card.textColor }}
+                  >
+                    {card.title}
+                  </h2>
+
+                  {/* Summary */}
+                  <p
+                    className="text-[15px] leading-relaxed flex-1 overflow-hidden"
+                    style={{ color: card.textColor, opacity: 0.85 }}
+                  >
+                    {card.summary}
+                  </p>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t" style={{ borderColor: card.textColor + "20" }}>
+                    <span className="text-xs font-medium" style={{ color: card.accentColor }}>
+                      {card.source}
+                    </span>
+                    <Link
+                      href="/article"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold backdrop-blur-md transition-transform active:scale-95"
+                      style={{
+                        background: card.textColor,
+                        color: card.bg,
+                      }}
+                    >
+                      Read more
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+
+        {/* Swipe hint */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: activeIndex === 0 ? 1 : 0 }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-text-tertiary pointer-events-none z-40"
+        >
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Swipe
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </motion.div>
       </div>
 
       <BottomNav active="discover" />

@@ -39,7 +39,7 @@ export function StockTicker({ region = "india" }: StockTickerProps) {
   const items = [...baseStocks, ...baseStocks];
 
   return (
-    <div className="relative overflow-hidden bg-surface border-b border-border/50 py-2.5">
+    <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
       <motion.div
         key={region}
         className="flex gap-6 whitespace-nowrap"
@@ -70,8 +70,8 @@ export function StockTicker({ region = "india" }: StockTickerProps) {
         ))}
       </motion.div>
 
-      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white/60 to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white/60 to-transparent pointer-events-none" />
     </div>
   );
 }

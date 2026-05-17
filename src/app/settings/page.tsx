@@ -3,69 +3,41 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
+import { useTheme } from "@/components/ThemeProvider";
+import { themeList } from "@/lib/themes";
 
-const themes = [
-  {
-    name: "Dusk",
-    subtitle: "Twilight & calm",
-    colors: ["#5b6ef2", "#7b93f8", "#a4b8fc"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Papaya",
-    subtitle: "Warm & bold",
-    colors: ["#ff6b35", "#ff8a5c", "#ffb08a"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Forest",
-    subtitle: "Fresh & natural",
-    colors: ["#059669", "#34d399", "#6ee7b7"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Rose",
-    subtitle: "Soft & vivid",
-    colors: ["#e11d48", "#fb7185", "#fda4af"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Aurum",
-    subtitle: "Rich & golden",
-    colors: ["#d97706", "#fbbf24", "#fde68a"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Midnight",
-    subtitle: "Dark & dramatic",
-    colors: ["#1e1b4b", "#312e81", "#4338ca"],
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-      </svg>
-    ),
-  },
-];
+const themeIcons: Record<string, React.ReactNode> = {
+  dusk: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+    </svg>
+  ),
+  papaya: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
+  forest: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  rose: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+  ),
+  aurum: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
+  midnight: (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    </svg>
+  ),
+};
 
 const categories = [
   { name: "Technology", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, selected: true },
@@ -81,7 +53,7 @@ const categories = [
 ];
 
 export default function SettingsPage() {
-  const [selectedTheme, setSelectedTheme] = useState(0);
+  const { themeKey, setThemeKey } = useTheme();
   const [selectedCategories, setSelectedCategories] = useState(
     categories.map((c) => c.selected)
   );
@@ -95,8 +67,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <div className="min-h-screen pb-24">
+      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
         <div className="max-w-lg mx-auto px-5 py-4">
           <p className="text-sm text-text-tertiary">Good afternoon, Vilay</p>
           <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
@@ -153,54 +125,57 @@ export default function SettingsPage() {
             Appearance
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            {themes.map((theme, i) => (
-              <motion.button
-                key={theme.name}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setSelectedTheme(i)}
-                className={`rounded-2xl overflow-hidden border-2 transition-colors ${
-                  selectedTheme === i
-                    ? "border-primary-500"
-                    : "border-border hover:border-border-hover"
-                }`}
-              >
-                <div
-                  className="h-20 p-3 flex flex-col justify-between"
-                  style={{
-                    background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]}, ${theme.colors[2]})`,
-                  }}
+            {themeList.map((theme) => {
+              const isActive = theme.key === themeKey;
+              return (
+                <motion.button
+                  key={theme.key}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setThemeKey(theme.key)}
+                  className={`rounded-2xl overflow-hidden border-2 transition-colors ${
+                    isActive
+                      ? "border-primary-500"
+                      : "border-border hover:border-border-hover"
+                  }`}
                 >
-                  <div className="flex gap-1.5">
-                    <div className="h-2 w-10 rounded-full bg-white/40" />
-                    <div className="h-2 w-6 rounded-full bg-white/25" />
+                  <div
+                    className="h-20 p-3 flex flex-col justify-between"
+                    style={{
+                      background: `linear-gradient(135deg, ${theme.preview[0]}, ${theme.preview[1]}, ${theme.preview[2]})`,
+                    }}
+                  >
+                    <div className="flex gap-1.5">
+                      <div className="h-2 w-10 rounded-full bg-white/40" />
+                      <div className="h-2 w-6 rounded-full bg-white/25" />
+                    </div>
+                    <div className="flex gap-1.5">
+                      <div className="h-2 w-14 rounded-full bg-white/30" />
+                      <div className="h-2 w-8 rounded-full bg-white/20" />
+                    </div>
                   </div>
-                  <div className="flex gap-1.5">
-                    <div className="h-2 w-14 rounded-full bg-white/30" />
-                    <div className="h-2 w-8 rounded-full bg-white/20" />
+                  <div className="bg-surface px-3 py-2.5 flex items-center justify-between">
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-text-primary">{theme.name}</p>
+                      <p className="text-[10px] text-text-tertiary">{theme.subtitle}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-text-tertiary">{themeIcons[theme.key]}</span>
+                      {isActive && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center"
+                        >
+                          <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="bg-surface px-3 py-2.5 flex items-center justify-between">
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-text-primary">{theme.name}</p>
-                    <p className="text-[10px] text-text-tertiary">{theme.subtitle}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-text-tertiary">{theme.icon}</span>
-                    {selectedTheme === i && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center"
-                      >
-                        <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                        </svg>
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-              </motion.button>
-            ))}
+                </motion.button>
+              );
+            })}
           </div>
         </section>
 

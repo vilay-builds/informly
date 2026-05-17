@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #fafbfd;
+  --color-background: #f4f5fc;
+  --color-bg-hue-strong: #e8eafa;
   --color-foreground: #1a1a2e;
 
-  /* Primary palette — soft, calming blues/purples */
+  /* Primary palette — overridden at runtime by ThemeProvider */
   --color-primary-50: #f0f4ff;
   --color-primary-100: #e0e9ff;
   --color-primary-200: #c7d6fe;
@@ -16,7 +17,7 @@
   --color-primary-800: #3438a4;
   --color-primary-900: #2f3482;
 
-  /* Accent — warm, friendly coral/peach */
+  /* Accent palette */
   --color-accent-50: #fff5f0;
   --color-accent-100: #ffe8db;
   --color-accent-200: #ffd1b8;
@@ -26,9 +27,8 @@
   --color-accent-600: #f04e1a;
   --color-accent-700: #c73c12;
   --color-accent-800: #9e3214;
-  --color-accent-900: #802c15;
 
-  /* Success — soft green */
+  /* Success */
   --color-success-400: #4ade80;
   --color-success-500: #22c55e;
 
@@ -36,6 +36,12 @@
   --color-surface: #ffffff;
   --color-surface-secondary: #f4f6fa;
   --color-surface-elevated: #ffffff;
+
+  /* Glass surfaces — iOS 26 liquid */
+  --color-glass: rgba(255, 255, 255, 0.65);
+  --color-glass-strong: rgba(255, 255, 255, 0.8);
+  --color-glass-subtle: rgba(255, 255, 255, 0.4);
+  --color-glass-border: rgba(255, 255, 255, 0.4);
 
   /* Text hierarchy */
   --color-text-primary: #1a1a2e;
@@ -60,29 +66,65 @@
   --shadow-md: 0 4px 12px rgba(26, 26, 46, 0.06);
   --shadow-lg: 0 8px 24px rgba(26, 26, 46, 0.08);
   --shadow-xl: 0 16px 48px rgba(26, 26, 46, 0.1);
+  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.08);
+  --shadow-card-float: 0 20px 60px -10px rgba(26, 26, 46, 0.15);
 
   /* Typography */
   --font-sans: var(--font-inter);
   --font-display: var(--font-display);
 
-  /* Spacing — generous whitespace */
+  /* Spacing */
   --spacing-page: 1.25rem;
 }
 
 body {
-  background: var(--color-background);
+  background:
+    radial-gradient(
+      ellipse 120% 80% at top,
+      var(--color-bg-hue-strong) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 100% 80% at bottom,
+      var(--color-background) 0%,
+      transparent 60%
+    ),
+    var(--color-background);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease;
 }
 
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
+  background: var(--color-background);
+  transition: background-color 0.4s ease;
 }
 
-/* Hide scrollbar but keep functionality */
+/* Liquid glass surface */
+.glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--color-glass-border);
+}
+
+.glass-strong {
+  background: var(--color-glass-strong);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid var(--color-glass-border);
+}
+
+.glass-subtle {
+  background: var(--color-glass-subtle);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

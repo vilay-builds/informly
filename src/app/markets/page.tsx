@@ -154,8 +154,8 @@ export default function MarketsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <div className="min-h-screen pb-24">
+      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
         <div className="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
