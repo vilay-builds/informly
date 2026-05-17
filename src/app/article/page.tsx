@@ -1,9 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UnderstandingSlider } from "@/components/UnderstandingSlider";
 import Link from "next/link";
+import { useSavedArticles } from "@/lib/savedArticles";
+import { useUserPreferences } from "@/lib/userPreferences";
+
+const ARTICLE = {
+  id: "story-1",
+  category: "Climate",
+  categoryColor: "#22c55e",
+  title: "EU passes landmark carbon reduction law affecting global supply chains",
+  summary:
+    "New regulations will require companies to track and reduce emissions across their entire production process.",
+  source: "Reuters",
+  readTime: "4 min",
+  image:
+    "https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=1200&q=85",
+};
 
 const aiSummary =
   "The EU has passed new regulations requiring companies to track and reduce carbon emissions across their entire supply chains. This affects global trade and could change how everyday products are made and shipped.";
@@ -68,11 +83,32 @@ const explainedContent = [
 ];
 
 export default function ArticlePage() {
-  const [level, setLevel] = useState(1);
+  const { prefs } = useUserPreferences();
+  const { isSaved, toggle } = useSavedArticles();
+  const [level, setLevel] = useState<0 | 1 | 2 | 3>(1);
   const [activeTab, setActiveTab] = useState<"article" | "explained">(
     "article"
   );
+
+  // Initialize reading level from user preference on first load
+  useEffect(() => {
+    setLevel(prefs.readingMode);
+  }, [prefs.readingMode]);
+
   const content = explainedContent[level];
+  const saved = isSaved(ARTICLE.id);
+
+  const handleToggleSave = () => {
+    toggle({
+      id: ARTICLE.id,
+      title: ARTICLE.title,
+      summary: ARTICLE.summary,
+      category: ARTICLE.category,
+      categoryColor: ARTICLE.categoryColor,
+      source: ARTICLE.source,
+      image: ARTICLE.image,
+    });
+  };
 
   return (
     <div className="min-h-screen pb-12">
@@ -90,21 +126,28 @@ export default function ArticlePage() {
           href="/"
           className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center"
         >
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </Link>
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={handleToggleSave}
+          aria-label={saved ? "Remove from saved" : "Save article"}
+          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center"
+        >
           <svg
-            width="20"
-            height="20"
-            fill="none"
+            width="18"
+            height="18"
+            fill={saved ? "white" : "none"}
             viewBox="0 0 24 24"
             stroke="white"
             strokeWidth="2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
-        </Link>
+        </motion.button>
 
         <div className="relative z-10 space-y-2">
           <div className="flex items-center gap-2">
@@ -124,7 +167,7 @@ export default function ArticlePage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-5 pt-4 space-y-5">
+      <div className="max-w-2xl mx-auto px-5 pt-4 space-y-5">
         {/* AI Summary — always visible */}
         <div className="bg-primary-50 rounded-2xl p-4 border border-primary-100">
           <div className="flex items-center gap-2 mb-2">
@@ -221,7 +264,10 @@ export default function ArticlePage() {
               className="space-y-5"
             >
               {/* Understanding Slider */}
-              <UnderstandingSlider value={level} onChange={setLevel} />
+              <UnderstandingSlider
+                value={level}
+                onChange={(v) => setLevel(v as 0 | 1 | 2 | 3)}
+              />
 
               {/* What This Actually Means */}
               <motion.section

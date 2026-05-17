@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
+import { useUserPreferences } from "@/lib/userPreferences";
 
 type Region = "us" | "india";
 
@@ -149,8 +150,14 @@ const stocks = {
 };
 
 export default function MarketsPage() {
+  const { prefs, update } = useUserPreferences();
   const [region, setRegion] = useState<Region>("india");
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Sync with user preference once hydrated
+  useEffect(() => {
+    setRegion(prefs.marketRegion);
+  }, [prefs.marketRegion]);
 
   const currentRegion = regions[region];
   const currentIndices = indices[region];
@@ -160,13 +167,14 @@ export default function MarketsPage() {
 
   const toggleRegion = (r: Region) => {
     setRegion(r);
+    update({ marketRegion: r });
     setPickerOpen(false);
   };
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 lg:pb-12">
       <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-5 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
               Markets
@@ -237,7 +245,7 @@ export default function MarketsPage() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-5 space-y-6">
+      <main className="max-w-2xl mx-auto px-5 pt-5 space-y-6">
         {/* Market Summary */}
         <motion.section
           key={`summary-${region}`}

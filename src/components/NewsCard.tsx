@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 
 interface NewsCardProps {
+  articleId?: string;
   category: string;
   categoryColor: string;
   title: string;
@@ -27,18 +28,19 @@ export function NewsCard({
   return (
     <Link href="/article">
       <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileTap={{ scale: 0.98 }}
-        className="bg-surface rounded-2xl shadow-sm border border-border cursor-pointer
-                   transition-shadow hover:shadow-md overflow-hidden"
+        whileTap={{ scale: 0.99 }}
+        className="bg-surface rounded-2xl border border-border cursor-pointer
+                   transition-shadow hover:shadow-md overflow-hidden h-full"
       >
         <div className="flex gap-3 p-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: categoryColor + "18", color: categoryColor }}
+                style={{
+                  backgroundColor: categoryColor + "18",
+                  color: categoryColor,
+                }}
               >
                 {category}
               </span>

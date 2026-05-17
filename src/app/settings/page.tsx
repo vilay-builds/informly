@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
+import { useUserPreferences } from "@/lib/userPreferences";
 
 const themeIcons: Record<string, React.ReactNode> = {
   dusk: (
@@ -53,10 +55,22 @@ const categories = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { themeKey, setThemeKey } = useTheme();
+  const { prefs, reset } = useUserPreferences();
   const [selectedCategories, setSelectedCategories] = useState(
     categories.map((c) => c.selected)
   );
+
+  const handleResetOnboarding = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm("Reset Nova and run onboarding again? Your saved articles and theme will stay.")
+    ) {
+      reset();
+      router.push("/onboarding");
+    }
+  };
 
   const toggleCategory = (index: number) => {
     setSelectedCategories((prev) => {
@@ -69,15 +83,17 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen pb-24">
       <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-lg mx-auto px-5 py-4">
-          <p className="text-sm text-text-tertiary">Good afternoon, Vilay</p>
+        <div className="max-w-2xl mx-auto px-5 py-4">
+          <p className="text-sm text-text-tertiary">
+            {prefs.name ? `Hi, ${prefs.name.split(" ")[0]}` : "Welcome"}
+          </p>
           <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
             Settings
           </h1>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-5 space-y-8">
+      <main className="max-w-2xl mx-auto px-5 pt-5 space-y-8">
         {/* Profile Section */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
@@ -86,11 +102,20 @@ export default function SettingsPage() {
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
             <div className="flex items-center gap-4 p-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-                <span className="text-xl font-bold text-white">V</span>
+                <span className="text-xl font-bold text-white">
+                  {(prefs.name?.[0] || "N").toUpperCase()}
+                </span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-text-primary">Vilay</p>
-                <p className="text-xs text-text-tertiary">Reading since May 2026</p>
+                <p className="text-sm font-semibold text-text-primary">
+                  {prefs.name || "Welcome"}
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  Reading since{" "}
+                  {prefs.onboardedAt
+                    ? new Date(prefs.onboardedAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+                    : "today"}
+                </p>
               </div>
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -277,6 +302,47 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* About */}
+        <section className="pb-6">
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            About
+          </h3>
+          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+            <button className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary">
+              <span className="text-sm text-text-primary">Privacy policy</span>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="border-t border-border" />
+            <button className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary">
+              <span className="text-sm text-text-primary">Terms of service</span>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="border-t border-border" />
+            <button
+              onClick={handleResetOnboarding}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary"
+            >
+              <span className="text-sm text-text-primary">Reset onboarding</span>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="border-t border-border" />
+            <div className="px-4 py-3.5 flex items-center justify-between">
+              <span className="text-sm text-text-tertiary">Version</span>
+              <span className="text-xs text-text-tertiary">Nova 0.1.0</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-text-tertiary text-center mt-6 leading-relaxed">
+            Made with care for everyone who wants to understand the world
+            without feeling overwhelmed.
+          </p>
         </section>
       </main>
 
