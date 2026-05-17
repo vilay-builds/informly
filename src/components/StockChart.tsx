@@ -19,14 +19,20 @@ export function StockChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const { pathD, fillD, min, max, points } = useMemo(() => {
+  const { pathD, fillD, min, max, normalizedPoints } = useMemo(() => {
     if (data.length === 0) {
-      return { pathD: "", fillD: "", min: 0, max: 0, points: [] as const };
+      return {
+        pathD: "",
+        fillD: "",
+        min: 0,
+        max: 0,
+        normalizedPoints: [] as { xPct: number; yPct: number }[],
+      };
     }
     const minVal = Math.min(...data);
     const maxVal = Math.max(...data);
     const range = maxVal - minVal || 1;
-    const padding = 4;
+    const padding = 6; // % of viewBox
     const w = 100;
     const h = 100;
 
@@ -36,8 +42,8 @@ export function StockChart({
       return [x, y] as [number, number];
     });
 
-    // Catmull-Rom → cubic Bezier for smooth, natural curves
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    // Catmull-Rom → cubic Bezier
+    let d = `M ${pts[0][0].toFixed(3)} ${pts[0][1].toFixed(3)}`;
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i - 1] || pts[i];
       const p1 = pts[i];
@@ -49,37 +55,42 @@ export function StockChart({
       const c2x = p2[0] - (p3[0] - p1[0]) / 6;
       const c2y = p2[1] - (p3[1] - p1[1]) / 6;
 
-      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+      d += ` C ${c1x.toFixed(3)} ${c1y.toFixed(3)}, ${c2x.toFixed(3)} ${c2y.toFixed(3)}, ${p2[0].toFixed(3)} ${p2[1].toFixed(3)}`;
     }
 
-    const fill = `${d} L ${w} ${h} L 0 ${h} Z`;
+    const fill = `${d} L 100 100 L 0 100 Z`;
 
     return {
       pathD: d,
       fillD: fill,
       min: minVal,
       max: maxVal,
-      points: pts,
+      normalizedPoints: pts.map(([x, y]) => ({ xPct: x, yPct: y })),
     };
   }, [data]);
 
-  const color = isPositive ? "#22c55e" : "#ef4444";
-  const gradientId = `chart-gradient-${isPositive ? "up" : "down"}`;
+  const color = isPositive ? "#16a34a" : "#dc2626";
+  const colorRing = isPositive
+    ? "rgba(22, 163, 74, 0.22)"
+    : "rgba(220, 38, 38, 0.22)";
+  const gradientId = `chart-grad-${isPositive ? "up" : "down"}`;
 
   const formatPrice = (p: number) =>
     currency === "₹"
       ? p.toLocaleString("en-IN", { maximumFractionDigits: 2 })
       : p.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
-  const handlePointer = (e: React.PointerEvent) => {
+  const updateHover = (clientX: number) => {
     if (!containerRef.current || data.length === 0) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const xPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const xPct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const idx = Math.round(xPct * (data.length - 1));
     setHoverIndex(idx);
   };
 
-  const hover = hoverIndex !== null ? points[hoverIndex] : null;
+  const clearHover = () => setHoverIndex(null);
+
+  const hover = hoverIndex !== null ? normalizedPoints[hoverIndex] : null;
   const hoverPrice = hoverIndex !== null ? data[hoverIndex] : null;
 
   return (
@@ -87,22 +98,28 @@ export function StockChart({
       ref={containerRef}
       className="relative w-full touch-none select-none"
       style={{ height }}
-      onPointerDown={handlePointer}
-      onPointerMove={(e) => {
-        if (e.buttons > 0 || e.pointerType === "touch") handlePointer(e);
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        updateHover(e.clientX);
       }}
-      onPointerUp={() => setHoverIndex(null)}
-      onPointerLeave={() => setHoverIndex(null)}
-      onPointerCancel={() => setHoverIndex(null)}
+      onPointerMove={(e) => {
+        if (e.buttons > 0 || e.pointerType === "touch") {
+          updateHover(e.clientX);
+        }
+      }}
+      onPointerUp={clearHover}
+      onPointerCancel={clearHover}
+      onPointerLeave={clearHover}
     >
+      {/* The line + fill (stretched is fine — it's a path, not a circle) */}
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
-        className="w-full h-full overflow-visible"
+        className="absolute inset-0 w-full h-full"
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -124,53 +141,69 @@ export function StockChart({
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          style={{ strokeWidth: "2px" }}
+          style={{ strokeWidth: "1.75px" }}
         />
-
-        {/* Crosshair */}
-        {hover && (
-          <>
-            <line
-              x1={hover[0]}
-              y1={0}
-              x2={hover[0]}
-              y2={100}
-              stroke={color}
-              strokeOpacity="0.3"
-              strokeDasharray="2 2"
-              vectorEffect="non-scaling-stroke"
-              style={{ strokeWidth: "1px" }}
-            />
-            <circle
-              cx={hover[0]}
-              cy={hover[1]}
-              r="4"
-              fill="white"
-              stroke={color}
-              vectorEffect="non-scaling-stroke"
-              style={{ strokeWidth: "2px" }}
-            />
-          </>
-        )}
       </svg>
 
-      {/* Hover price label */}
-      {hover && hoverPrice !== null && containerRef.current && (
+      {/* HTML overlay — guarantees pixel-perfect circles and lines */}
+      {hover && (
+        <>
+          {/* Crosshair */}
+          <div
+            className="absolute top-0 bottom-0 w-px pointer-events-none"
+            style={{
+              left: `${hover.xPct}%`,
+              background: `linear-gradient(to bottom, transparent, ${color}40 8%, ${color}40 92%, transparent)`,
+            }}
+          />
+          {/* Marker dot — fixed pixel size */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              left: `${hover.xPct}%`,
+              top: `${hover.yPct}%`,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div
+              className="rounded-full"
+              style={{
+                width: 18,
+                height: 18,
+                background: colorRing,
+              }}
+            />
+            <div
+              className="absolute top-1/2 left-1/2 rounded-full bg-white"
+              style={{
+                width: 9,
+                height: 9,
+                transform: "translate(-50%, -50%)",
+                boxShadow: `0 0 0 2px ${color}, 0 2px 4px rgba(0,0,0,0.12)`,
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Floating price label */}
+      {hover && hoverPrice !== null && (
         <div
-          className="absolute -top-1 pointer-events-none"
+          className="absolute pointer-events-none z-10"
           style={{
-            left: `${hover[0]}%`,
-            transform: "translate(-50%, -100%)",
+            left: `${hover.xPct}%`,
+            top: 0,
+            transform: "translate(-50%, -8px)",
           }}
         >
-          <div className="bg-text-primary text-white text-xs font-semibold px-2.5 py-1 rounded-md whitespace-nowrap shadow-lg">
+          <div className="bg-text-primary text-white text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap shadow-md">
             {currency}
             {formatPrice(hoverPrice)}
           </div>
         </div>
       )}
 
-      {/* Min/max labels — fade out during scrub */}
+      {/* Min/max corner labels */}
       <div
         className="absolute right-0 top-0 text-[10px] text-text-tertiary font-medium transition-opacity"
         style={{ opacity: hover ? 0 : 1 }}
@@ -189,7 +222,6 @@ export function StockChart({
   );
 }
 
-// Smooth, realistic mock data: drifted sine modulation + tiny noise, then smoothed
 export function generateChartData(
   startPrice: number,
   endPrice: number,
@@ -198,37 +230,31 @@ export function generateChartData(
 ): number[] {
   const raw: number[] = [];
 
-  // Pick a few harmonics for natural-looking oscillation
-  const wave1Amp = 0.015 + Math.random() * 0.01;
+  const wave1Amp = 0.012 + Math.random() * 0.01;
   const wave1Freq = 1 + Math.random() * 1.5;
   const wave1Phase = Math.random() * Math.PI * 2;
 
-  const wave2Amp = 0.008 + Math.random() * 0.008;
+  const wave2Amp = 0.006 + Math.random() * 0.006;
   const wave2Freq = 3 + Math.random() * 3;
   const wave2Phase = Math.random() * Math.PI * 2;
 
   for (let i = 0; i < points; i++) {
     const t = i / (points - 1);
-    // Linear drift between start and end
     const base = startPrice + (endPrice - startPrice) * t;
-    // Multi-harmonic oscillation around the trend
     const osc =
       base *
       (wave1Amp * Math.sin(t * Math.PI * 2 * wave1Freq + wave1Phase) +
         wave2Amp * Math.sin(t * Math.PI * 2 * wave2Freq + wave2Phase));
-    // Tiny noise
     const jitter = (Math.random() - 0.5) * 2 * noise * base;
     raw.push(base + osc + jitter);
   }
 
-  // 3-point moving average to kill any remaining jaggedness
   const smoothed = raw.map((_, i) => {
     const prev = raw[i - 1] ?? raw[i];
     const next = raw[i + 1] ?? raw[i];
     return (prev + raw[i] * 2 + next) / 4;
   });
 
-  // Anchor endpoints
   smoothed[0] = startPrice;
   smoothed[smoothed.length - 1] = endPrice;
 
