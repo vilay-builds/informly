@@ -69,7 +69,7 @@ export default function SavedPage() {
                 variants={fadeInUp}
                 className="bg-surface border border-border rounded-2xl overflow-hidden"
               >
-                <Link href="/article" className="flex gap-3 p-4">
+                <Link href={`/article/${article.id}`} className="flex gap-3 p-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <Pill

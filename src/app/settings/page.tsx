@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
 import { useUserPreferences } from "@/lib/userPreferences";
+import {
+  useNotificationPrefs,
+  useInterests,
+  useWatchlist,
+  useReadingHistory,
+  computeStreak,
+  NotificationPrefs,
+} from "@/lib/persistence";
+import { useSavedArticles } from "@/lib/savedArticles";
+import { useToast } from "@/components/Toast";
 
-const themeIcons: Record<string, React.ReactNode> = {
+const THEME_ICONS: Record<string, React.ReactNode> = {
   dusk: (
     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -41,43 +50,57 @@ const themeIcons: Record<string, React.ReactNode> = {
   ),
 };
 
-const categories = [
-  { name: "Technology", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, selected: true },
-  { name: "Business", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, selected: true },
-  { name: "Climate", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, selected: true },
-  { name: "Health", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>, selected: false },
-  { name: "Politics", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, selected: false },
-  { name: "Science", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>, selected: true },
-  { name: "Sports", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, selected: false },
-  { name: "Entertainment", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>, selected: false },
-  { name: "World", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, selected: true },
-  { name: "Economy", icon: <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, selected: true },
+const CATEGORY_OPTIONS = [
+  { key: "technology", label: "Technology" },
+  { key: "business", label: "Business" },
+  { key: "climate", label: "Climate" },
+  { key: "health", label: "Health" },
+  { key: "politics", label: "Politics" },
+  { key: "science", label: "Science" },
+  { key: "world", label: "World" },
+  { key: "economy", label: "Economy" },
+  { key: "sports", label: "Sports" },
+  { key: "entertainment", label: "Culture" },
+];
+
+const NOTIFICATION_OPTIONS: {
+  key: keyof NotificationPrefs;
+  label: string;
+  desc: string;
+}[] = [
+  { key: "dailyBrief", label: "Daily brief", desc: "Morning summary of top stories" },
+  { key: "marketAlerts", label: "Market alerts", desc: "When your stocks move significantly" },
+  { key: "breakingNews", label: "Breaking news", desc: "Major world events only" },
+  { key: "weeklyDigest", label: "Weekly digest", desc: "What you missed this week" },
 ];
 
 export default function SettingsPage() {
   const router = useRouter();
   const { themeKey, setThemeKey } = useTheme();
   const { prefs, reset } = useUserPreferences();
-  const [selectedCategories, setSelectedCategories] = useState(
-    categories.map((c) => c.selected)
-  );
+  const { interests, toggle: toggleInterest } = useInterests();
+  const { prefs: notifPrefs, setPref } = useNotificationPrefs();
+  const { list: usWatchlist, remove: removeUS } = useWatchlist("us");
+  const { list: indiaWatchlist, remove: removeIN } = useWatchlist("india");
+  const { history } = useReadingHistory();
+  const { items: savedItems } = useSavedArticles();
+  const toast = useToast();
+
+  const streak = computeStreak(history);
+  const allWatchlist = [
+    ...usWatchlist.map((t) => ({ ticker: t, region: "us" as const })),
+    ...indiaWatchlist.map((t) => ({ ticker: t, region: "india" as const })),
+  ];
 
   const handleResetOnboarding = () => {
     if (
-      typeof window !== "undefined" &&
-      window.confirm("Reset Nova and run onboarding again? Your saved articles and theme will stay.")
+      window.confirm(
+        "Reset Nova and run onboarding again? Your saved articles and theme will stay."
+      )
     ) {
       reset();
       router.push("/onboarding");
     }
-  };
-
-  const toggleCategory = (index: number) => {
-    setSelectedCategories((prev) => {
-      const next = [...prev];
-      next[index] = !next[index];
-      return next;
-    });
   };
 
   return (
@@ -94,7 +117,7 @@ export default function SettingsPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-5 pt-5 space-y-8">
-        {/* Profile Section */}
+        {/* PROFILE */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             Profile
@@ -113,38 +136,39 @@ export default function SettingsPage() {
                 <p className="text-xs text-text-tertiary">
                   Reading since{" "}
                   {prefs.onboardedAt
-                    ? new Date(prefs.onboardedAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+                    ? new Date(prefs.onboardedAt).toLocaleDateString(undefined, {
+                        month: "long",
+                        year: "numeric",
+                      })
                     : "today"}
                 </p>
               </div>
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
             </div>
             <div className="border-t border-border px-4 py-3 flex items-center justify-between">
               <div className="text-center flex-1">
                 <p className="text-xs text-text-tertiary">Articles read</p>
-                <p className="text-lg font-bold text-text-primary">47</p>
+                <p className="text-lg font-bold text-text-primary">{history.length}</p>
               </div>
               <div className="text-center flex-1">
                 <p className="text-xs text-text-tertiary">Day streak</p>
                 <div className="flex items-center justify-center gap-1">
-                  <p className="text-lg font-bold text-text-primary">12</p>
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-accent-500">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-                  </svg>
+                  <p className="text-lg font-bold text-text-primary">{streak}</p>
+                  {streak > 0 && (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-accent-500">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    </svg>
+                  )}
                 </div>
               </div>
               <div className="text-center flex-1">
-                <p className="text-xs text-text-tertiary">Stocks watched</p>
-                <p className="text-lg font-bold text-text-primary">6</p>
+                <p className="text-xs text-text-tertiary">Saved</p>
+                <p className="text-lg font-bold text-text-primary">{savedItems.length}</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Appearance / Themes */}
+        {/* APPEARANCE */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             Appearance
@@ -156,7 +180,10 @@ export default function SettingsPage() {
                 <motion.button
                   key={theme.key}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => setThemeKey(theme.key)}
+                  onClick={() => {
+                    setThemeKey(theme.key);
+                    toast.show({ message: `Theme set to ${theme.name}`, variant: "info" });
+                  }}
                   className={`rounded-2xl overflow-hidden border-2 transition-colors ${
                     isActive
                       ? "border-primary-500"
@@ -184,7 +211,7 @@ export default function SettingsPage() {
                       <p className="text-[10px] text-text-tertiary">{theme.subtitle}</p>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-text-tertiary">{themeIcons[theme.key]}</span>
+                      <span className="text-text-tertiary">{THEME_ICONS[theme.key]}</span>
                       {isActive && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -204,107 +231,118 @@ export default function SettingsPage() {
           </div>
         </section>
 
-
-        {/* News Categories */}
+        {/* INTERESTS */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             Your Interests
           </h3>
           <div className="bg-surface rounded-2xl p-4 border border-border">
             <p className="text-xs text-text-secondary mb-4">
-              Choose the topics you care about. Your feed and discover cards will
-              prioritize these.
+              Topics you care about — your feed prioritizes these.
             </p>
             <div className="flex flex-wrap gap-2">
-              {categories.map((cat, i) => (
-                <motion.button
-                  key={cat.name}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => toggleCategory(i)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all border ${
-                    selectedCategories[i]
-                      ? "bg-primary-50 text-primary-700 border-primary-200"
-                      : "bg-surface-secondary text-text-tertiary border-transparent hover:border-border"
-                  }`}
-                >
-                  <span className={selectedCategories[i] ? "text-primary-500" : "text-text-tertiary"}>{cat.icon}</span>
-                  {cat.name}
-                </motion.button>
-              ))}
+              {CATEGORY_OPTIONS.map((cat) => {
+                const active = interests.includes(cat.key);
+                return (
+                  <motion.button
+                    key={cat.key}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleInterest(cat.key)}
+                    className={`px-3 py-2 rounded-full text-xs font-medium transition-all border ${
+                      active
+                        ? "bg-primary-50 text-primary-700 border-primary-200"
+                        : "bg-surface-secondary text-text-tertiary border-transparent hover:border-border"
+                    }`}
+                  >
+                    {cat.label}
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Stock Watchlist */}
+        {/* WATCHLIST */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Ticker Watchlist
+            Stock Watchlist
           </h3>
           <div className="bg-surface rounded-2xl p-4 border border-border">
             <p className="text-xs text-text-secondary mb-4">
-              These stocks appear in your ticker bar and watchlist.
+              These stocks appear in your watchlist and ticker bar.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {["AAPL", "NVDA", "TSLA", "MSFT", "RELIANCE", "TCS", "HDFCBANK", "INFY"].map(
-                (ticker) => (
-                  <span
-                    key={ticker}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-surface-secondary text-text-primary border border-border"
+            {allWatchlist.length === 0 ? (
+              <p className="text-xs text-text-tertiary text-center py-3">
+                No stocks watched yet. Tap the star on any stock detail page.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {allWatchlist.map(({ ticker, region }) => (
+                  <button
+                    key={`${region}-${ticker}`}
+                    onClick={() => {
+                      if (region === "us") removeUS(ticker);
+                      else removeIN(ticker);
+                      toast.show({
+                        message: `${ticker} removed from watchlist`,
+                        variant: "success",
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-surface-secondary text-text-primary border border-border hover:border-red-300 hover:text-red-600 transition-colors"
                   >
                     {ticker}
                     <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </span>
-                )
-              )}
-              <button className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium text-primary-500 border border-dashed border-primary-300 hover:bg-primary-50 transition-colors">
-                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Add stock
-              </button>
-            </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Notifications */}
-        <section className="pb-6">
+        {/* NOTIFICATIONS */}
+        <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             Notifications
           </h3>
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-            {[
-              { label: "Daily brief", desc: "Morning summary of top stories", on: true },
-              { label: "Market alerts", desc: "When your stocks move significantly", on: true },
-              { label: "Breaking news", desc: "Major world events only", on: false },
-              { label: "Weekly digest", desc: "What you missed this week", on: true },
-            ].map((item, i) => (
-              <div
-                key={item.label}
-                className={`flex items-center justify-between p-4 ${i > 0 ? "border-t border-border" : ""}`}
-              >
-                <div>
-                  <p className="text-sm font-medium text-text-primary">{item.label}</p>
-                  <p className="text-xs text-text-tertiary">{item.desc}</p>
-                </div>
-                <div
-                  className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
-                    item.on ? "bg-primary-500" : "bg-surface-secondary"
+            {NOTIFICATION_OPTIONS.map((item, i) => {
+              const on = notifPrefs[item.key];
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setPref(item.key, !on)}
+                  className={`w-full flex items-center justify-between p-4 hover:bg-surface-secondary/40 transition-colors ${
+                    i > 0 ? "border-t border-border" : ""
                   }`}
                 >
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-text-primary">
+                      {item.label}
+                    </p>
+                    <p className="text-xs text-text-tertiary">{item.desc}</p>
+                  </div>
                   <div
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                      item.on ? "translate-x-5" : "translate-x-0.5"
+                    className={`w-11 h-6 rounded-full relative transition-colors ${
+                      on ? "bg-primary-500" : "bg-surface-secondary"
                     }`}
-                  />
-                </div>
-              </div>
-            ))}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm ${
+                        on ? "left-[22px]" : "left-0.5"
+                      }`}
+                    />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
 
-        {/* About */}
+        {/* ABOUT */}
         <section className="pb-6">
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             About
@@ -336,7 +374,7 @@ export default function SettingsPage() {
             <div className="border-t border-border" />
             <div className="px-4 py-3.5 flex items-center justify-between">
               <span className="text-sm text-text-tertiary">Version</span>
-              <span className="text-xs text-text-tertiary">Nova 0.1.0</span>
+              <span className="text-xs text-text-tertiary">Nova 0.2.0</span>
             </div>
           </div>
           <p className="text-[11px] text-text-tertiary text-center mt-6 leading-relaxed">

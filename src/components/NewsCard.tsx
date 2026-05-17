@@ -16,6 +16,7 @@ interface NewsCardProps {
 }
 
 export function NewsCard({
+  articleId,
   category,
   categoryColor,
   title,
@@ -25,8 +26,9 @@ export function NewsCard({
   source,
   image,
 }: NewsCardProps) {
+  const href = articleId ? `/article/${articleId}` : "/";
   return (
-    <Link href="/article">
+    <Link href={href}>
       <motion.article
         whileTap={{ scale: 0.99 }}
         className="bg-surface rounded-2xl border border-border cursor-pointer

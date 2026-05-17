@@ -19,57 +19,27 @@ interface Result {
   image?: string;
 }
 
-const MOCK_ARTICLES: Result[] = [
-  {
-    type: "article",
-    id: "a1",
-    title: "EU passes landmark carbon reduction law affecting global supply chains",
-    subtitle: "Companies must track emissions across their entire production pipeline.",
-    meta: "Climate · 3h ago",
-    href: "/article",
-    image:
-      "https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=200&q=80",
-  },
-  {
-    type: "article",
-    id: "a2",
-    title: "Federal Reserve signals pause on interest rate changes through summer",
-    subtitle: "Borrowing costs likely to stay where they are for several months.",
-    meta: "Economy · 5h ago",
-    href: "/article",
-    image:
-      "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&q=80",
-  },
-  {
-    type: "article",
-    id: "a3",
-    title: "OpenAI announces new reasoning model that can solve PhD-level problems",
-    subtitle: "The latest advancement could transform scientific research.",
-    meta: "AI · 2h ago",
-    href: "/article",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=200&q=80",
-  },
-  {
-    type: "article",
-    id: "a4",
-    title: "Japan introduces four-day work week pilot for government employees",
-    subtitle: "The initiative aims to boost declining birth rates.",
-    meta: "World · 8h ago",
-    href: "/article",
-    image:
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=200&q=80",
-  },
-];
+import { getAllArticles } from "@/lib/content/articles";
+import { getAllStocks } from "@/lib/content/stocks";
 
-const MOCK_STOCKS: Result[] = [
-  { type: "stock", id: "AAPL", title: "AAPL", subtitle: "Apple Inc.", meta: "+2.3%", href: "/stock?t=AAPL" },
-  { type: "stock", id: "NVDA", title: "NVDA", subtitle: "NVIDIA Corp.", meta: "+4.1%", href: "/stock?t=NVDA" },
-  { type: "stock", id: "RELIANCE", title: "RELIANCE", subtitle: "Reliance Industries", meta: "+1.4%", href: "/stock?t=RELIANCE" },
-  { type: "stock", id: "TSLA", title: "TSLA", subtitle: "Tesla Inc.", meta: "-1.8%", href: "/stock?t=TSLA" },
-  { type: "stock", id: "TCS", title: "TCS", subtitle: "Tata Consultancy", meta: "+0.9%", href: "/stock?t=TCS" },
-  { type: "stock", id: "MSFT", title: "MSFT", subtitle: "Microsoft", meta: "+1.2%", href: "/stock?t=MSFT" },
-];
+const ARTICLE_RESULTS: Result[] = getAllArticles().map((a) => ({
+  type: "article",
+  id: a.id,
+  title: a.title,
+  subtitle: a.aiSummary,
+  meta: `${a.category} · ${a.timeAgo}`,
+  href: `/article/${a.id}`,
+  image: a.image,
+}));
+
+const STOCK_RESULTS: Result[] = getAllStocks().map((s) => ({
+  type: "stock",
+  id: s.ticker,
+  title: s.ticker,
+  subtitle: s.name,
+  meta: `${s.change >= 0 ? "+" : ""}${s.change}%`,
+  href: `/stock/${s.ticker}`,
+}));
 
 const MOCK_TOPICS: Result[] = [
   { type: "topic", id: "t1", title: "Artificial Intelligence", subtitle: "84 stories this week", href: "#" },
@@ -119,7 +89,7 @@ export default function SearchPage() {
   const results = useMemo(() => {
     if (!query.trim()) return null;
     const q = query.toLowerCase();
-    const matchAll = [...MOCK_ARTICLES, ...MOCK_STOCKS, ...MOCK_TOPICS].filter(
+    const matchAll = [...ARTICLE_RESULTS, ...STOCK_RESULTS, ...MOCK_TOPICS].filter(
       (r) =>
         r.title.toLowerCase().includes(q) ||
         r.subtitle?.toLowerCase().includes(q)
@@ -252,7 +222,7 @@ export default function SearchPage() {
                   Popular stocks
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5">
-                  {MOCK_STOCKS.slice(0, 6).map((s) => {
+                  {STOCK_RESULTS.slice(0, 6).map((s) => {
                     const positive = s.meta?.startsWith("+");
                     return (
                       <Link

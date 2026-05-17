@@ -5,6 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
 import { useUserPreferences } from "@/lib/userPreferences";
+import { useWatchlist } from "@/lib/persistence";
+import { getStocksByRegion } from "@/lib/content/stocks";
+import { MarketsSkeleton } from "@/components/skeletons/MarketsSkeleton";
+import { Pill } from "@/components/ui";
+import { fadeInUp, stagger } from "@/lib/motion";
 
 type Region = "us" | "india";
 
@@ -82,87 +87,29 @@ const signalConfig = {
   },
 };
 
-const stocks = {
-  us: [
-    {
-      ticker: "AAPL", name: "Apple Inc.", price: "198.45", change: 2.3,
-      signal: "bullish" as const,
-      reason: "Strong iPhone sales in emerging markets driving revenue growth",
-      pe: "32.4", marketCap: "3.05T",
-    },
-    {
-      ticker: "NVDA", name: "NVIDIA Corp.", price: "1,245.80", change: 4.1,
-      signal: "bullish" as const,
-      reason: "AI chip demand continues to exceed supply, pricing power remains strong",
-      pe: "68.2", marketCap: "3.07T",
-    },
-    {
-      ticker: "TSLA", name: "Tesla Inc.", price: "178.20", change: -1.8,
-      signal: "bearish" as const,
-      reason: "Production delays at Berlin factory and increased competition in China",
-      pe: "45.1", marketCap: "567B",
-    },
-    {
-      ticker: "MSFT", name: "Microsoft", price: "442.15", change: 1.2,
-      signal: "bullish" as const,
-      reason: "Azure cloud revenue beat estimates, Copilot AI adoption accelerating",
-      pe: "36.8", marketCap: "3.29T",
-    },
-  ],
-  india: [
-    {
-      ticker: "RELIANCE", name: "Reliance Industries", price: "2,945.30", change: 1.4,
-      signal: "bullish" as const,
-      reason: "Jio subscriber additions beat estimates, retail expansion on track",
-      pe: "28.6", marketCap: "19.9L Cr",
-    },
-    {
-      ticker: "TCS", name: "Tata Consultancy", price: "3,712.80", change: 0.9,
-      signal: "neutral" as const,
-      reason: "Steady deal pipeline but slower discretionary spending from US clients",
-      pe: "31.2", marketCap: "13.4L Cr",
-    },
-    {
-      ticker: "INFY", name: "Infosys Ltd.", price: "1,456.25", change: -0.6,
-      signal: "neutral" as const,
-      reason: "Guidance maintained but margin pressure from wage hikes expected",
-      pe: "25.4", marketCap: "6.0L Cr",
-    },
-    {
-      ticker: "HDFCBANK", name: "HDFC Bank", price: "1,678.90", change: 2.1,
-      signal: "bullish" as const,
-      reason: "Strong credit growth and improving deposit mix post-merger",
-      pe: "19.8", marketCap: "12.8L Cr",
-    },
-    {
-      ticker: "BHARTIARTL", name: "Bharti Airtel", price: "1,534.60", change: 1.7,
-      signal: "bullish" as const,
-      reason: "ARPU growth continues after tariff hikes, 5G rollout boosting data usage",
-      pe: "76.3", marketCap: "9.1L Cr",
-    },
-    {
-      ticker: "ITC", name: "ITC Ltd.", price: "442.15", change: 0.3,
-      signal: "neutral" as const,
-      reason: "FMCG business improving but cigarette volume growth remains flat",
-      pe: "26.1", marketCap: "5.5L Cr",
-    },
-  ],
-};
-
 export default function MarketsPage() {
-  const { prefs, update } = useUserPreferences();
+  const { prefs, update, hydrated } = useUserPreferences();
   const [region, setRegion] = useState<Region>("india");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const { list: watchlist } = useWatchlist(region);
 
-  // Sync with user preference once hydrated
   useEffect(() => {
     setRegion(prefs.marketRegion);
   }, [prefs.marketRegion]);
 
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+
   const currentRegion = regions[region];
   const currentIndices = indices[region];
   const currentSummary = summaries[region];
-  const currentStocks = stocks[region];
+  const allRegionStocks = getStocksByRegion(region);
+  const currentStocks = allRegionStocks.filter((s) =>
+    watchlist.includes(s.ticker)
+  );
   const currencySymbol = region === "india" ? "INR " : "$";
 
   const toggleRegion = (r: Region) => {
@@ -179,10 +126,15 @@ export default function MarketsPage() {
             <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
               Markets
             </h1>
-            <p className="text-xs text-text-tertiary">Saturday, May 17</p>
+            <p className="text-xs text-text-tertiary">
+              {new Date().toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
           </div>
 
-          {/* Region Pill */}
           <div className="relative">
             <button
               onClick={() => setPickerOpen(!pickerOpen)}
@@ -245,176 +197,171 @@ export default function MarketsPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-5 pt-5 space-y-6">
-        {/* Market Summary */}
-        <motion.section
-          key={`summary-${region}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`rounded-2xl p-5 border ${
-            region === "us"
-              ? "bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200/50"
-              : "bg-gradient-to-br from-accent-50 to-accent-100/50 border-accent-200/50"
-          }`}
+      {!hydrated || !loaded ? (
+        <MarketsSkeleton />
+      ) : (
+        <motion.main
+          variants={stagger(0.06)}
+          initial="hidden"
+          animate="visible"
+          className="max-w-2xl mx-auto px-5 pt-5 space-y-6"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                region === "us" ? "bg-primary-200" : "bg-accent-200"
-              }`}
-            >
-              <svg
-                width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
-                className={region === "us" ? "text-primary-700" : "text-accent-700"}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <h2
-              className={`text-sm font-semibold ${
-                region === "us" ? "text-primary-800" : "text-accent-800"
-              }`}
-            >
-              {currentSummary.title}
-            </h2>
-          </div>
-          <p
-            className={`text-sm leading-relaxed ${
-              region === "us" ? "text-primary-700" : "text-accent-700"
+          <motion.section
+            key={`summary-${region}`}
+            variants={fadeInUp}
+            className={`rounded-2xl p-5 border ${
+              region === "us"
+                ? "bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200/50"
+                : "bg-gradient-to-br from-accent-50 to-accent-100/50 border-accent-200/50"
             }`}
           >
-            {currentSummary.explanation}
-          </p>
-        </motion.section>
-
-        {/* Indices */}
-        <section>
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Market Pulse
-          </h3>
-          <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 pb-1">
-            {currentIndices.map((index, i) => (
-              <motion.div
-                key={`${region}-${index.name}`}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="bg-surface rounded-2xl p-4 border border-border flex-shrink-0 min-w-[130px]"
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  region === "us" ? "bg-primary-200" : "bg-accent-200"
+                }`}
               >
-                <p className="text-[10px] text-text-tertiary mb-1.5 truncate">
-                  {index.name}
-                </p>
-                <p className="text-base font-bold text-text-primary mb-1">
-                  {index.value}
-                </p>
-                <div
-                  className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
-                    index.change >= 0
-                      ? "bg-success-400/15 text-success-500"
-                      : "bg-red-100 text-red-500"
-                  }`}
+                <svg
+                  width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+                  className={region === "us" ? "text-primary-700" : "text-accent-700"}
                 >
-                  <svg
-                    width="9"
-                    height="9"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    {index.change >= 0 ? (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                      />
-                    ) : (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-                      />
-                    )}
-                  </svg>
-                  {index.change >= 0 ? "+" : ""}
-                  {index.change}%
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <h2
+                className={`text-sm font-semibold ${
+                  region === "us" ? "text-primary-800" : "text-accent-800"
+                }`}
+              >
+                {currentSummary.title}
+              </h2>
+            </div>
+            <p
+              className={`text-sm leading-relaxed ${
+                region === "us" ? "text-primary-700" : "text-accent-700"
+              }`}
+            >
+              {currentSummary.explanation}
+            </p>
+          </motion.section>
 
-        {/* Watchlist */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-text-primary">
-              Your Watchlist
+          <motion.section variants={fadeInUp}>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">
+              Market Pulse
             </h3>
-            <button className="text-xs font-medium text-primary-500">
-              Edit
-            </button>
-          </div>
-          <div className="space-y-3">
-            {currentStocks.map((stock, i) => {
-              const signal = signalConfig[stock.signal];
-              return (
-                <Link
-                  key={`${region}-${stock.ticker}`}
-                  href={`/stock?t=${stock.ticker}`}
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 pb-1">
+              {currentIndices.map((index) => (
+                <div
+                  key={`${region}-${index.name}`}
+                  className="bg-surface rounded-2xl p-4 border border-border flex-shrink-0 min-w-[130px]"
                 >
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + i * 0.06 }}
-                    className="bg-surface rounded-2xl p-4 border border-border cursor-pointer transition-shadow hover:shadow-md mb-3"
+                  <p className="text-[10px] text-text-tertiary mb-1.5 truncate">
+                    {index.name}
+                  </p>
+                  <p className="text-base font-bold text-text-primary mb-1">
+                    {index.value}
+                  </p>
+                  <div
+                    className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
+                      index.change >= 0
+                        ? "bg-success-400/15 text-success-500"
+                        : "bg-red-100 text-red-500"
+                    }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="text-sm font-bold text-text-primary">
-                          {stock.ticker}
-                        </span>
-                        <p className="text-xs text-text-tertiary">{stock.name}</p>
+                    <svg
+                      width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"
+                    >
+                      {index.change >= 0 ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
+                      )}
+                    </svg>
+                    {index.change >= 0 ? "+" : ""}
+                    {index.change}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.section variants={fadeInUp}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-text-primary">
+                Your Watchlist
+              </h3>
+              <span className="text-xs text-text-tertiary">
+                {currentStocks.length} stocks
+              </span>
+            </div>
+
+            {currentStocks.length === 0 ? (
+              <div className="bg-surface rounded-2xl border border-border p-6 text-center">
+                <p className="text-sm text-text-secondary mb-3">
+                  No stocks in your {region === "us" ? "US" : "India"} watchlist
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  Open any stock and tap the star to add it.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {currentStocks.map((stock) => {
+                  const signal = signalConfig[stock.signal];
+                  const change = stock.change;
+                  return (
+                    <Link
+                      key={stock.ticker}
+                      href={`/stock/${stock.ticker}`}
+                      className="block bg-surface rounded-2xl p-4 border border-border transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="text-sm font-bold text-text-primary">
+                            {stock.ticker}
+                          </span>
+                          <p className="text-xs text-text-tertiary">{stock.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-text-primary">
+                            {currencySymbol}
+                            {stock.price.toLocaleString(
+                              region === "india" ? "en-IN" : "en-US",
+                              { maximumFractionDigits: 2 }
+                            )}
+                          </p>
+                          <p
+                            className={`text-xs font-medium ${
+                              change >= 0
+                                ? "text-success-500"
+                                : "text-red-500"
+                            }`}
+                          >
+                            {change >= 0 ? "+" : ""}
+                            {change}%
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-text-primary">
-                          {currencySymbol}
-                          {stock.price}
-                        </p>
-                        <p
-                          className={`text-xs font-medium ${
-                            stock.change >= 0
-                              ? "text-success-500"
-                              : "text-red-500"
-                          }`}
+                      <p className="text-xs text-text-secondary leading-relaxed mb-2 line-clamp-2">
+                        {stock.signalReason}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Pill
+                          icon={signal.icon}
+                          size="xs"
+                          className={`${signal.bg} ${signal.color}`}
                         >
-                          {stock.change >= 0 ? "+" : ""}
-                          {stock.change}%
-                        </p>
+                          {signal.label}
+                        </Pill>
                       </div>
-                    </div>
-                    <p className="text-xs text-text-secondary leading-relaxed mb-2">
-                      {stock.reason}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${signal.bg} ${signal.color}`}
-                      >
-                        {signal.icon} {signal.label}
-                      </span>
-                      <span className="text-[10px] text-text-tertiary">
-                        P/E {stock.pe}
-                      </span>
-                      <span className="text-[10px] text-text-tertiary">
-                        Cap {stock.marketCap}
-                      </span>
-                    </div>
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      </main>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </motion.section>
+        </motion.main>
+      )}
 
       <BottomNav active="markets" />
     </div>

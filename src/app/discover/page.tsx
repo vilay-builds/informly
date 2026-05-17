@@ -4,100 +4,45 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
+import { getDiscoverArticles } from "@/lib/content/articles";
 
-interface Card {
-  category: string;
-  title: string;
-  summary: string;
-  source: string;
-  timeAgo: string;
-  bg: string;
-  textColor: string;
-  accentColor: string;
-}
-
-const cards: Card[] = [
-  {
-    category: "AI & Technology",
-    title: "OpenAI announces new reasoning model that can solve PhD-level problems",
-    summary:
-      "The latest advancement in AI reasoning could transform how scientists approach complex research challenges. This model can break down multi-step problems that previously stumped even the most advanced systems.",
-    source: "The Verge",
-    timeAgo: "2h ago",
-    bg: "#fef3c7",
-    textColor: "#451a03",
-    accentColor: "#a16207",
-  },
-  {
-    category: "Climate",
-    title: "EU passes landmark carbon reduction law affecting global supply chains",
-    summary:
-      "New regulations will require companies to track and reduce emissions across their entire production process. This affects how everyday products are made and shipped worldwide.",
-    source: "Reuters",
-    timeAgo: "3h ago",
-    bg: "#dcfce7",
-    textColor: "#14532d",
-    accentColor: "#15803d",
-  },
-  {
-    category: "Markets",
-    title: "Federal Reserve signals pause on interest rate changes through summer",
-    summary:
-      "This means borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months. Markets are responding cautiously to the news.",
-    source: "Bloomberg",
-    timeAgo: "5h ago",
-    bg: "#dbeafe",
-    textColor: "#1e3a8a",
-    accentColor: "#1d4ed8",
-  },
-  {
-    category: "Health",
-    title: "Breakthrough weight-loss medication shows promise in treating sleep apnea",
-    summary:
-      "Researchers found that patients using GLP-1 drugs experienced significant improvements in breathing during sleep, opening new treatment possibilities for millions.",
-    source: "Nature",
-    timeAgo: "6h ago",
-    bg: "#fce7f3",
-    textColor: "#831843",
-    accentColor: "#be185d",
-  },
-  {
-    category: "World",
-    title: "Japan introduces four-day work week pilot for government employees",
-    summary:
-      "The initiative aims to boost declining birth rates by giving workers more time for family, and could reshape work culture across Asia.",
-    source: "BBC",
-    timeAgo: "8h ago",
-    bg: "#e9d5ff",
-    textColor: "#581c87",
-    accentColor: "#7e22ce",
-  },
-  {
-    category: "Business",
-    title: "Tesla's robotaxi service launches in three US cities this summer",
-    summary:
-      "Riders in Austin, Phoenix, and Las Vegas will be the first to hail fully autonomous Tesla rides through the company's app.",
-    source: "TechCrunch",
-    timeAgo: "12h ago",
-    bg: "#fed7aa",
-    textColor: "#7c2d12",
-    accentColor: "#c2410c",
-  },
+const PALETTES: { bg: string; textColor: string; accentColor: string }[] = [
+  { bg: "#fef3c7", textColor: "#451a03", accentColor: "#a16207" },
+  { bg: "#dcfce7", textColor: "#14532d", accentColor: "#15803d" },
+  { bg: "#dbeafe", textColor: "#1e3a8a", accentColor: "#1d4ed8" },
+  { bg: "#fce7f3", textColor: "#831843", accentColor: "#be185d" },
+  { bg: "#e9d5ff", textColor: "#581c87", accentColor: "#7e22ce" },
+  { bg: "#fed7aa", textColor: "#7c2d12", accentColor: "#c2410c" },
+  { bg: "#ccfbf1", textColor: "#134e4a", accentColor: "#0f766e" },
+  { bg: "#fecaca", textColor: "#7f1d1d", accentColor: "#b91c1c" },
+  { bg: "#e0e7ff", textColor: "#312e81", accentColor: "#4338ca" },
+  { bg: "#fef9c3", textColor: "#713f12", accentColor: "#a16207" },
 ];
 
 export default function DiscoverPage() {
+  const articles = getDiscoverArticles();
+  const cards = articles.map((a, i) => ({
+    ...a,
+    ...PALETTES[i % PALETTES.length],
+  }));
+
   const [activeIndex, setActiveIndex] = useState(0);
   const constraintsRef = useRef(null);
+
+  const paginate = (delta: number) => {
+    const next = Math.max(0, Math.min(cards.length - 1, activeIndex + delta));
+    setActiveIndex(next);
+  };
 
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
     const threshold = 60;
-    if (info.offset.x < -threshold && activeIndex < cards.length - 1) {
-      setActiveIndex(activeIndex + 1);
-    } else if (info.offset.x > threshold && activeIndex > 0) {
-      setActiveIndex(activeIndex - 1);
+    if (info.offset.x < -threshold) {
+      paginate(1);
+    } else if (info.offset.x > threshold) {
+      paginate(-1);
     }
   };
 
@@ -110,8 +55,8 @@ export default function DiscoverPage() {
             Discover
           </h1>
         </div>
-        <div className="flex items-center gap-1.5">
-          {cards.map((_, i) => (
+        <div className="flex items-center gap-1.5 max-w-[200px] overflow-hidden">
+          {cards.slice(0, 10).map((_, i) => (
             <div
               key={i}
               className={`h-1 rounded-full transition-all ${
@@ -129,18 +74,16 @@ export default function DiscoverPage() {
         className="flex-1 relative overflow-hidden flex items-center justify-center"
         style={{ perspective: "1200px" }}
       >
-        {/* Stacked Cards */}
         <AnimatePresence initial={false}>
           {cards.map((card, i) => {
             const offset = i - activeIndex;
             const isActive = offset === 0;
             const isVisible = Math.abs(offset) <= 2;
-
             if (!isVisible) return null;
 
             return (
               <motion.div
-                key={i}
+                key={card.id}
                 drag={isActive ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.6}
@@ -154,11 +97,7 @@ export default function DiscoverPage() {
                   opacity: Math.abs(offset) > 1 ? 0.5 : 1,
                   zIndex: cards.length - Math.abs(offset),
                 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 whileDrag={{ rotate: 0, scale: 1.02 }}
                 className="absolute w-[88%] max-w-md h-[72%] rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing"
                 style={{
@@ -168,7 +107,6 @@ export default function DiscoverPage() {
                 }}
               >
                 <div className="h-full flex flex-col p-7">
-                  {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <span
                       className="text-[11px] font-semibold uppercase tracking-wider"
@@ -184,7 +122,6 @@ export default function DiscoverPage() {
                     </span>
                   </div>
 
-                  {/* Title */}
                   <h2
                     className="text-[1.7rem] leading-[1.1] font-bold font-[family-name:var(--font-display)] mb-5"
                     style={{ color: card.textColor }}
@@ -192,22 +129,26 @@ export default function DiscoverPage() {
                     {card.title}
                   </h2>
 
-                  {/* Summary */}
                   <p
                     className="text-[15px] leading-relaxed flex-1 overflow-hidden"
                     style={{ color: card.textColor, opacity: 0.85 }}
                   >
-                    {card.summary}
+                    {card.aiSummary}
                   </p>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t" style={{ borderColor: card.textColor + "20" }}>
-                    <span className="text-xs font-medium" style={{ color: card.accentColor }}>
+                  <div
+                    className="flex items-center justify-between mt-6 pt-4 border-t"
+                    style={{ borderColor: card.textColor + "20" }}
+                  >
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: card.accentColor }}
+                    >
                       {card.source}
                     </span>
                     <Link
-                      href="/article"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold backdrop-blur-md transition-transform active:scale-95"
+                      href={`/article/${card.id}`}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-transform active:scale-95"
                       style={{
                         background: card.textColor,
                         color: card.bg,
@@ -225,7 +166,6 @@ export default function DiscoverPage() {
           })}
         </AnimatePresence>
 
-        {/* Swipe hint */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: activeIndex === 0 ? 1 : 0 }}

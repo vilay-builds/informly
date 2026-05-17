@@ -3,6 +3,8 @@ import { Inter, Coming_Soon } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/AppShell";
+import { ToastProvider } from "@/components/Toast";
+import { MotionProvider } from "@/components/MotionProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -19,6 +21,20 @@ export const metadata: Metadata = {
   title: "Nova — News that makes sense",
   description:
     "A calm, AI-powered companion for understanding world events and financial markets.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Nova",
+  },
+};
+
+export const viewport = {
+  themeColor: "#5b6ef2",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -33,7 +49,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <MotionProvider>
+            <ToastProvider>
+              <AppShell>{children}</AppShell>
+            </ToastProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

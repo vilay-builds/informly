@@ -3,60 +3,10 @@
 import { useState } from "react";
 import { motion, PanInfo } from "framer-motion";
 import Link from "next/link";
-
-interface FeaturedStory {
-  category: string;
-  title: string;
-  summary: string;
-  image: string;
-  timeAgo: string;
-  source: string;
-}
-
-const stories: FeaturedStory[] = [
-  {
-    category: "AI & Technology",
-    title: "OpenAI announces new reasoning model that solves PhD-level problems",
-    summary:
-      "The latest advancement could transform how scientists approach complex research challenges.",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=900&q=80",
-    timeAgo: "2h ago",
-    source: "The Verge",
-  },
-  {
-    category: "Climate",
-    title: "EU passes landmark carbon reduction law for global supply chains",
-    summary:
-      "New regulations will require companies to track and reduce emissions across their entire production process.",
-    image:
-      "https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=900&q=80",
-    timeAgo: "3h ago",
-    source: "Reuters",
-  },
-  {
-    category: "Markets",
-    title: "Federal Reserve signals pause on interest rate changes through summer",
-    summary:
-      "Borrowing costs for homes, cars, and credit cards are likely to stay where they are for the next few months.",
-    image:
-      "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=900&q=80",
-    timeAgo: "5h ago",
-    source: "Bloomberg",
-  },
-  {
-    category: "World",
-    title: "Japan introduces four-day work week pilot for government employees",
-    summary:
-      "The initiative aims to boost declining birth rates by giving workers more time for family.",
-    image:
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=900&q=80",
-    timeAgo: "8h ago",
-    source: "BBC",
-  },
-];
+import { getFeaturedArticles } from "@/lib/content/articles";
 
 export function FeaturedCarousel() {
+  const stories = getFeaturedArticles();
   const [index, setIndex] = useState(0);
 
   const handleDragEnd = (
@@ -80,19 +30,14 @@ export function FeaturedCarousel() {
             <div
               key={i}
               className={`h-1 rounded-full transition-all ${
-                i === index
-                  ? "w-5 bg-primary-500"
-                  : "w-1 bg-text-tertiary/40"
+                i === index ? "w-5 bg-primary-500" : "w-1 bg-text-tertiary/40"
               }`}
             />
           ))}
         </div>
       </div>
 
-      <div
-        className="relative h-[280px]"
-        style={{ perspective: "1200px" }}
-      >
+      <div className="relative h-[280px]" style={{ perspective: "1200px" }}>
         {stories.map((story, i) => {
           const offset = i - index;
           const isActive = offset === 0;
@@ -101,7 +46,7 @@ export function FeaturedCarousel() {
 
           return (
             <motion.div
-              key={i}
+              key={story.id}
               drag={isActive ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.6}
@@ -119,7 +64,7 @@ export function FeaturedCarousel() {
               whileDrag={{ rotate: 0, scale: 1.02 }}
               className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing shadow-xl"
             >
-              <Link href="/article" className="block h-full">
+              <Link href={`/article/${story.id}`} className="block h-full">
                 <div
                   className="absolute inset-0 bg-cover bg-center bg-zinc-900"
                   style={{ backgroundImage: `url(${story.image})` }}
@@ -140,10 +85,12 @@ export function FeaturedCarousel() {
                       {story.title}
                     </h2>
                     <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
-                      {story.summary}
+                      {story.aiSummary}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-white/60">{story.source}</span>
+                      <span className="text-[11px] text-white/60">
+                        {story.source}
+                      </span>
                       <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium">
                         Read more
                         <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { Sidebar } from "@/components/Sidebar";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const PUBLIC_ROUTES = ["/onboarding"];
 
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="lg:pl-64">
       <Sidebar active={activeKey} />
       {children}
+      <CommandPalette />
     </div>
   );
 }
