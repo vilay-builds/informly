@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { motion, PanInfo } from "framer-motion";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getFeaturedArticles } from "@/lib/content/articles";
+import { easing } from "@/lib/motion";
 
 export function FeaturedCarousel() {
+  const router = useRouter();
   const stories = getFeaturedArticles();
   const [index, setIndex] = useState(0);
 
@@ -60,47 +62,48 @@ export function FeaturedCarousel() {
                 opacity: Math.abs(offset) > 1 ? 0.4 : 1,
                 zIndex: stories.length - Math.abs(offset),
               }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              transition={easing.spring}
               whileDrag={{ rotate: 0, scale: 1.02 }}
-              className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing shadow-xl"
+              onClick={() => {
+                if (isActive) router.push(`/article/${story.id}`);
+              }}
+              className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer select-none shadow-xl"
             >
-              <Link href={`/article/${story.id}`} className="block h-full">
-                <div
-                  className="absolute inset-0 bg-cover bg-center bg-zinc-900"
-                  style={{ backgroundImage: `url(${story.image})` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-zinc-900 pointer-events-none"
+                style={{ backgroundImage: `url(${story.image})` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
-                {isActive && (
-                  <div className="relative h-full flex flex-col justify-end p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
-                        {story.category}
-                      </span>
-                      <span className="text-[10px] text-white/70">
-                        {story.timeAgo}
-                      </span>
-                    </div>
-                    <h2 className="text-lg font-bold leading-tight text-white mb-2">
-                      {story.title}
-                    </h2>
-                    <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
-                      {story.aiSummary}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-white/60">
-                        {story.source}
-                      </span>
-                      <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium">
-                        Read more
-                        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </div>
+              {isActive && (
+                <div className="relative h-full flex flex-col justify-end p-5 pointer-events-none">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
+                      {story.category}
+                    </span>
+                    <span className="text-[10px] text-white/70">
+                      {story.timeAgo}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold leading-tight text-white mb-2">
+                    {story.title}
+                  </h2>
+                  <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
+                    {story.aiSummary}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-white/60">
+                      {story.source}
+                    </span>
+                    <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium">
+                      Read more
+                      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
                     </div>
                   </div>
-                )}
-              </Link>
+                </div>
+              )}
             </motion.div>
           );
         })}
