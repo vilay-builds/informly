@@ -282,7 +282,7 @@ export default function MarketsPage() {
         {/* Indices */}
         <section>
           <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Market Indices
+            Market Pulse
           </h3>
           <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 pb-1">
             {currentIndices.map((index, i) => (

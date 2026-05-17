@@ -102,7 +102,7 @@ export default function Home() {
         variants={stagger}
         initial="initial"
         animate="animate"
-        className="max-w-lg mx-auto px-5 pt-5 space-y-6"
+        className="max-w-lg mx-auto px-5 pt-5 space-y-10"
       >
         {/* Greeting */}
         <motion.section
