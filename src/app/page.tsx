@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { NewsCard } from "@/components/NewsCard";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
-import { StockTicker } from "@/components/StockTicker";
 import { BottomNav } from "@/components/BottomNav";
 import { IconButton, SectionHeader } from "@/components/ui";
 import { FeedSkeleton } from "@/components/skeletons/FeedSkeleton";
@@ -79,8 +78,6 @@ export default function Home() {
           </Link>
         </div>
       </header>
-
-      <StockTicker region={prefs.marketRegion} />
 
       {!hydrated || !loaded ? (
         <FeedSkeleton />

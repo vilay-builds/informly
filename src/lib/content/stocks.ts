@@ -548,6 +548,309 @@ const stocks: Stock[] = [
   },
 ];
 
+// Lightweight "mover" entries — listed in movers/search but without
+// the deep about/metrics narrative. They still get full detail pages
+// rendered from this minimal data plus generic copy fallbacks.
+const lightStocks: Stock[] = [
+  // US extras
+  {
+    ticker: "AMD",
+    name: "AMD",
+    region: "us",
+    currency: "$",
+    price: 178.4,
+    change: 3.6,
+    signal: "bullish",
+    signalReason:
+      "AMD continues to take server CPU share and is making meaningful AI inference progress with the MI300 series.",
+    about:
+      "AMD designs CPUs, GPUs, and adaptive computing chips. Major competitor to NVIDIA and Intel.",
+    stats: [
+      { label: "Market Cap", value: "$289B" },
+      { label: "Volume", value: "48.2M" },
+      { label: "Day Range", value: "172 – 180" },
+      { label: "52W Range", value: "94.50 – 184.92" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "42.8",
+        explanation:
+          "Higher than the broader market — reflects expectations that AMD's AI and data-center growth continues.",
+      },
+      {
+        label: "Revenue Growth",
+        value: "+18.2%",
+        explanation:
+          "Solid growth driven by data-center CPUs and early AI accelerator traction.",
+      },
+    ],
+    news: [],
+    analystSummary:
+      "Consensus Buy with average target of $210. Bulls cite AI accelerator ramp and server CPU share gains.",
+  },
+  {
+    ticker: "AMZN",
+    name: "Amazon",
+    region: "us",
+    currency: "$",
+    price: 189.3,
+    change: 1.6,
+    signal: "bullish",
+    signalReason:
+      "AWS growth re-accelerating with AI workloads. Retail margin recovery is on track and advertising remains a strong second engine.",
+    about:
+      "Amazon runs the world's largest e-commerce marketplace and the AWS cloud platform, along with advertising, Prime Video, and devices.",
+    stats: [
+      { label: "Market Cap", value: "$1.97T" },
+      { label: "Volume", value: "42.6M" },
+      { label: "Day Range", value: "186 – 191" },
+      { label: "52W Range", value: "144 – 201" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "58.3",
+        explanation:
+          "Premium valuation reflecting AWS profitability and the long-term AI cloud thesis.",
+      },
+    ],
+    news: [],
+    analystSummary:
+      "Consensus Buy, average target $215. AWS reacceleration and advertising are the main drivers.",
+  },
+  {
+    ticker: "META",
+    name: "Meta Platforms",
+    region: "us",
+    currency: "$",
+    price: 512.7,
+    change: 2.4,
+    signal: "bullish",
+    signalReason:
+      "Ad revenue surging as Reels monetization improves. AI-driven targeting is lifting price per impression across Instagram and Facebook.",
+    about:
+      "Meta runs Facebook, Instagram, WhatsApp, and Threads, plus Reality Labs (Quest VR headsets and AR research).",
+    stats: [
+      { label: "Market Cap", value: "$1.30T" },
+      { label: "Volume", value: "12.4M" },
+      { label: "Day Range", value: "508 – 516" },
+      { label: "52W Range", value: "394 – 542" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "27.1",
+        explanation:
+          "Reasonable for a mega-cap growing this fast. Some discount for Reality Labs losses.",
+      },
+    ],
+    news: [],
+    analystSummary:
+      "Strong Buy consensus, target $580. Ad strength + Reels monetization + AI infrastructure leverage.",
+  },
+  {
+    ticker: "NFLX",
+    name: "Netflix",
+    region: "us",
+    currency: "$",
+    price: 612.4,
+    change: -1.2,
+    signal: "neutral",
+    signalReason:
+      "Subscriber growth steady but content costs remain elevated. Ad tier is gaining traction but monetization is still ramping.",
+    about:
+      "Netflix is the largest subscription streaming service globally, with ~270M paid subscribers.",
+    stats: [
+      { label: "Market Cap", value: "$268B" },
+      { label: "Volume", value: "4.8M" },
+      { label: "Day Range", value: "608 – 619" },
+      { label: "52W Range", value: "434 – 698" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "42.0",
+        explanation: "Premium valuation reflecting content moat and operational discipline.",
+      },
+    ],
+    news: [],
+    analystSummary: "Mixed views; average target $640. Ad tier execution is the key variable.",
+  },
+  {
+    ticker: "BAC",
+    name: "Bank of America",
+    region: "us",
+    currency: "$",
+    price: 42.8,
+    change: 0.6,
+    signal: "neutral",
+    signalReason:
+      "Net interest income stabilizing as the rate-cut cycle pauses. Consumer credit quality remains within expectations.",
+    about:
+      "Bank of America is one of the largest U.S. banks, with consumer banking, wealth management, and global markets divisions.",
+    stats: [
+      { label: "Market Cap", value: "$338B" },
+      { label: "Volume", value: "32.1M" },
+      { label: "Day Range", value: "42.4 – 43.1" },
+      { label: "52W Range", value: "33.0 – 45.8" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "13.2",
+        explanation: "Below market — typical for large banks in a rate-stable environment.",
+      },
+    ],
+    news: [],
+    analystSummary: "Consensus Hold, target $46. Higher-for-longer rates are supportive.",
+  },
+
+  // India extras
+  {
+    ticker: "ICICIBANK",
+    name: "ICICI Bank",
+    region: "india",
+    currency: "₹",
+    price: 1185.4,
+    change: 2.5,
+    signal: "bullish",
+    signalReason:
+      "Strong retail loan growth and improving asset quality. ICICI Bank is taking market share from PSU banks.",
+    about:
+      "ICICI Bank is one of India's largest private-sector banks, offering retail, corporate, and investment banking.",
+    stats: [
+      { label: "Market Cap", value: "₹8.4L Cr" },
+      { label: "Volume", value: "10.2M" },
+      { label: "Day Range", value: "1,175 – 1,192" },
+      { label: "52W Range", value: "920 – 1,210" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "18.9",
+        explanation: "Attractive valuation for a top-tier private bank with strong growth.",
+      },
+    ],
+    news: [],
+    analystSummary: "Consensus Buy, target ₹1,350. Asset quality and retail mix are highlights.",
+  },
+  {
+    ticker: "MARUTI",
+    name: "Maruti Suzuki",
+    region: "india",
+    currency: "₹",
+    price: 12420.0,
+    change: 1.9,
+    signal: "bullish",
+    signalReason:
+      "Auto sector recovery underway. Maruti's SUV portfolio is gaining traction and rural demand is improving.",
+    about:
+      "Maruti Suzuki is India's largest carmaker, with the broadest small-car portfolio and a growing SUV lineup.",
+    stats: [
+      { label: "Market Cap", value: "₹3.9L Cr" },
+      { label: "Volume", value: "0.8M" },
+      { label: "Day Range", value: "12,290 – 12,460" },
+      { label: "52W Range", value: "9,738 – 13,680" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "26.2",
+        explanation: "Slightly above sector average, reflecting market leadership.",
+      },
+    ],
+    news: [],
+    analystSummary: "Consensus Buy, target ₹14,000. SUV mix shift and rural recovery are positives.",
+  },
+  {
+    ticker: "ASIANPAINT",
+    name: "Asian Paints",
+    region: "india",
+    currency: "₹",
+    price: 2680.5,
+    change: -1.2,
+    signal: "bearish",
+    signalReason:
+      "Margin pressure from raw material costs and increased competition from new entrants. Volume growth has slowed.",
+    about:
+      "Asian Paints is India's largest paint company, expanding into home decor and waterproofing solutions.",
+    stats: [
+      { label: "Market Cap", value: "₹2.6L Cr" },
+      { label: "Volume", value: "1.8M" },
+      { label: "Day Range", value: "2,670 – 2,720" },
+      { label: "52W Range", value: "2,560 – 3,420" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "49.8",
+        explanation: "Historically premium valuation under pressure from competition.",
+      },
+    ],
+    news: [],
+    analystSummary: "Mixed views, average target ₹2,900. Competition is the key concern.",
+  },
+  {
+    ticker: "TITAN",
+    name: "Titan Company",
+    region: "india",
+    currency: "₹",
+    price: 3450.2,
+    change: 2.8,
+    signal: "bullish",
+    signalReason:
+      "Wedding season demand strong and jewelry segment growing in double digits. Watches and eyewear also recovering.",
+    about:
+      "Titan is India's largest jewelry retailer (Tanishq, CaratLane) and a leading watches/eyewear brand. Part of the Tata Group.",
+    stats: [
+      { label: "Market Cap", value: "₹3.1L Cr" },
+      { label: "Volume", value: "1.2M" },
+      { label: "Day Range", value: "3,418 – 3,468" },
+      { label: "52W Range", value: "2,925 – 3,886" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "84.2",
+        explanation: "High P/E reflects long-term growth runway in formalizing Indian jewelry market.",
+      },
+    ],
+    news: [],
+    analystSummary: "Consensus Buy, target ₹3,800. Premiumization and store expansion drive thesis.",
+  },
+  {
+    ticker: "SUNPHARMA",
+    name: "Sun Pharma",
+    region: "india",
+    currency: "₹",
+    price: 1645.8,
+    change: -0.4,
+    signal: "neutral",
+    signalReason:
+      "Specialty pharma growth steady. Generic competition in US continues to pressure pricing in select molecules.",
+    about:
+      "Sun Pharma is India's largest pharma company, with a growing specialty business in the US and Japan.",
+    stats: [
+      { label: "Market Cap", value: "₹3.9L Cr" },
+      { label: "Volume", value: "1.6M" },
+      { label: "Day Range", value: "1,640 – 1,658" },
+      { label: "52W Range", value: "1,374 – 1,803" },
+    ],
+    metrics: [
+      {
+        label: "P/E Ratio",
+        value: "35.4",
+        explanation: "Premium valuation reflecting specialty pharma upside.",
+      },
+    ],
+    news: [],
+    analystSummary: "Consensus Hold-to-Buy, target ₹1,800.",
+  },
+];
+
+stocks.push(...lightStocks);
+
 const STOCK_MAP = new Map(stocks.map((s) => [s.ticker, s]));
 
 export function getAllStocks(): Stock[] {
@@ -560,6 +863,20 @@ export function getStockByTicker(ticker: string): Stock | undefined {
 
 export function getStocksByRegion(region: "us" | "india"): Stock[] {
   return stocks.filter((s) => s.region === region);
+}
+
+export function getTopGainers(region: "us" | "india", limit = 4): Stock[] {
+  return getStocksByRegion(region)
+    .filter((s) => s.change > 0)
+    .sort((a, b) => b.change - a.change)
+    .slice(0, limit);
+}
+
+export function getTopLosers(region: "us" | "india", limit = 4): Stock[] {
+  return getStocksByRegion(region)
+    .filter((s) => s.change < 0)
+    .sort((a, b) => a.change - b.change)
+    .slice(0, limit);
 }
 
 export { stocks };

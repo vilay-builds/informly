@@ -5,8 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { Sidebar } from "@/components/Sidebar";
 import { CommandPalette } from "@/components/CommandPalette";
+import { StockTicker } from "@/components/StockTicker";
 
-const PUBLIC_ROUTES = ["/onboarding"];
+const STANDALONE_ROUTES = ["/onboarding"];
+const NO_TICKER_ROUTES = ["/settings", "/onboarding"];
 
 const ROUTE_KEY: Record<string, string> = {
   "/": "feed",
@@ -26,22 +28,23 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (PUBLIC_ROUTES.includes(pathname)) return;
+    if (STANDALONE_ROUTES.includes(pathname)) return;
     if (!prefs.onboardedAt) {
       router.replace("/onboarding");
     }
   }, [hydrated, prefs.onboardedAt, pathname, router]);
 
   const activeKey = ROUTE_KEY[pathname] || "feed";
+  const showTicker = !NO_TICKER_ROUTES.some((r) => pathname.startsWith(r));
 
-  // Onboarding renders standalone (no shell)
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (STANDALONE_ROUTES.includes(pathname)) {
     return <>{children}</>;
   }
 
   return (
     <div className="lg:pl-64">
       <Sidebar active={activeKey} />
+      {showTicker && <StockTicker region={prefs.marketRegion} />}
       {children}
       <CommandPalette />
     </div>

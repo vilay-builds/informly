@@ -5,9 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { useWatchlist } from "@/lib/persistence";
-import { getStocksByRegion } from "@/lib/content/stocks";
+import {
+  getStocksByRegion,
+  getTopGainers,
+  getTopLosers,
+} from "@/lib/content/stocks";
+import { getSectors } from "@/lib/content/sectors";
 import { MarketsSkeleton } from "@/components/skeletons/MarketsSkeleton";
 import { WatchlistCarousel } from "@/components/WatchlistCarousel";
+import { MoversGrid } from "@/components/MoversGrid";
+import { SectorGrid } from "@/components/SectorGrid";
 import { fadeInUp, stagger } from "@/lib/motion";
 
 type Region = "us" | "india";
@@ -15,29 +22,6 @@ type Region = "us" | "india";
 const regions = {
   us: { label: "US", flag: "USD" },
   india: { label: "IN", flag: "INR" },
-};
-
-const indices = {
-  us: [
-    { name: "S&P 500", value: "5,342.18", change: 0.6 },
-    { name: "NASDAQ", value: "16,891.45", change: 1.2 },
-    { name: "DOW", value: "39,456.78", change: 0.3 },
-    { name: "Russell 2000", value: "2,087.45", change: 1.4 },
-    { name: "VIX", value: "14.23", change: -3.2 },
-    { name: "Gold", value: "2,418.50", change: 0.4 },
-    { name: "Bitcoin", value: "97,234", change: 2.8 },
-    { name: "10Y Yield", value: "4.23", change: -0.5 },
-  ],
-  india: [
-    { name: "NIFTY 50", value: "23,465.70", change: 0.8 },
-    { name: "SENSEX", value: "76,892.45", change: 0.7 },
-    { name: "NIFTY Bank", value: "50,234.10", change: -0.3 },
-    { name: "NIFTY IT", value: "38,124.80", change: 1.1 },
-    { name: "NIFTY Auto", value: "24,891.15", change: 0.5 },
-    { name: "NIFTY FMCG", value: "57,234.60", change: -0.2 },
-    { name: "India VIX", value: "12.85", change: -4.1 },
-    { name: "Gold (10g)", value: "73,450", change: 0.6 },
-  ],
 };
 
 const summaries = {
@@ -70,7 +54,6 @@ export default function MarketsPage() {
   }, []);
 
   const currentRegion = regions[region];
-  const currentIndices = indices[region];
   const currentSummary = summaries[region];
   const allRegionStocks = getStocksByRegion(region);
   const currentStocks = allRegionStocks.filter((s) =>
@@ -210,46 +193,6 @@ export default function MarketsPage() {
             </p>
           </motion.section>
 
-          <motion.section variants={fadeInUp}>
-            <h3 className="text-sm font-semibold text-text-primary mb-3">
-              Market Pulse
-            </h3>
-            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 pb-1">
-              {currentIndices.map((index) => (
-                <div
-                  key={`${region}-${index.name}`}
-                  className="bg-surface rounded-2xl p-4 border border-border flex-shrink-0 min-w-[130px]"
-                >
-                  <p className="text-[10px] text-text-tertiary mb-1.5 truncate">
-                    {index.name}
-                  </p>
-                  <p className="text-base font-bold text-text-primary mb-1">
-                    {index.value}
-                  </p>
-                  <div
-                    className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
-                      index.change >= 0
-                        ? "bg-success-400/15 text-success-500"
-                        : "bg-red-100 text-red-500"
-                    }`}
-                  >
-                    <svg
-                      width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"
-                    >
-                      {index.change >= 0 ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-                      )}
-                    </svg>
-                    {index.change >= 0 ? "+" : ""}
-                    {index.change}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.section>
-
           <motion.div variants={fadeInUp}>
             {currentStocks.length === 0 ? (
               <section>
@@ -268,6 +211,17 @@ export default function MarketsPage() {
             ) : (
               <WatchlistCarousel stocks={currentStocks} region={region} />
             )}
+          </motion.div>
+
+          <motion.div variants={fadeInUp} className="pt-2">
+            <MoversGrid
+              gainers={getTopGainers(region, 4)}
+              losers={getTopLosers(region, 4)}
+            />
+          </motion.div>
+
+          <motion.div variants={fadeInUp}>
+            <SectorGrid sectors={getSectors(region)} />
           </motion.div>
         </motion.main>
       )}
