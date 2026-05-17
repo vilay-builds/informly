@@ -2,6 +2,8 @@
 
 import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { useTheme } from "@/components/ThemeProvider";
+import { themes } from "@/lib/themes";
 
 interface StockChartProps {
   data: number[];
@@ -18,6 +20,8 @@ export function StockChart({
 }: StockChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const { themeKey } = useTheme();
+  const theme = themes[themeKey];
 
   const { pathD, fillD, min, max, normalizedPoints } = useMemo(() => {
     if (data.length === 0) {
@@ -90,11 +94,12 @@ export function StockChart({
     };
   }, [data]);
 
-  const color = isPositive ? "#16a34a" : "#dc2626";
+  // Positive = theme primary color (cohesive with app); negative = universal red
+  const color = isPositive ? theme.primary[600] : "#dc2626";
   const colorRing = isPositive
-    ? "rgba(22, 163, 74, 0.22)"
+    ? `${theme.primary[500]}38`
     : "rgba(220, 38, 38, 0.22)";
-  const gradientId = `chart-grad-${isPositive ? "up" : "down"}`;
+  const gradientId = `chart-grad-${themeKey}-${isPositive ? "up" : "down"}`;
 
   const formatPrice = (p: number) =>
     currency === "₹"
