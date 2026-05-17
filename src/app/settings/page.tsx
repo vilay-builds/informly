@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { useTheme } from "@/components/ThemeProvider";
-import { themeList } from "@/lib/themes";
+import { themeList, ColorScheme } from "@/lib/themes";
+import Link from "next/link";
 import { useUserPreferences } from "@/lib/userPreferences";
 import {
   useNotificationPrefs,
@@ -76,7 +77,7 @@ const NOTIFICATION_OPTIONS: {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { themeKey, setThemeKey } = useTheme();
+  const { themeKey, setThemeKey, colorScheme, setColorScheme } = useTheme();
   const { prefs, reset } = useUserPreferences();
   const { interests, toggle: toggleInterest } = useInterests();
   const { prefs: notifPrefs, setPref } = useNotificationPrefs();
@@ -168,10 +169,104 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* SHORTCUTS */}
+        <section>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            Quick Links
+          </h3>
+          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+            {[
+              { href: "/brief", label: "Daily Brief", desc: "Today's curated stories" },
+              { href: "/history", label: "Reading History", desc: "Everything you've read" },
+              { href: "/notifications", label: "Notifications", desc: "Inbox of alerts" },
+            ].map((link, i) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center justify-between px-4 py-3.5 hover:bg-surface-secondary transition-colors ${
+                  i > 0 ? "border-t border-border" : ""
+                }`}
+              >
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    {link.label}
+                  </p>
+                  <p className="text-xs text-text-tertiary">{link.desc}</p>
+                </div>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* COLOR SCHEME */}
+        <section>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            Display
+          </h3>
+          <div className="bg-surface rounded-2xl p-2 border border-border">
+            <div className="grid grid-cols-3 gap-1">
+              {([
+                {
+                  key: "light" as ColorScheme,
+                  label: "Light",
+                  icon: (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "dark" as ColorScheme,
+                  label: "Dark",
+                  icon: (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "system" as ColorScheme,
+                  label: "System",
+                  icon: (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  ),
+                },
+              ]).map((opt) => {
+                const active = colorScheme === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => {
+                      setColorScheme(opt.key);
+                      toast.show({
+                        message: `Display set to ${opt.label}`,
+                        variant: "info",
+                      });
+                    }}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all ${
+                      active
+                        ? "bg-primary-50 text-primary-700"
+                        : "text-text-secondary hover:bg-surface-secondary"
+                    }`}
+                  >
+                    {opt.icon}
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* APPEARANCE */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Appearance
+            Theme
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {themeList.map((theme) => {

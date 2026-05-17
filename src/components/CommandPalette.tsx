@@ -34,9 +34,12 @@ export function CommandPalette() {
     };
     return [
       { id: "nav-feed", group: "Navigate", title: "Go to Feed", action: navigate("/") },
+      { id: "nav-brief", group: "Navigate", title: "Open Daily Brief", action: navigate("/brief") },
       { id: "nav-discover", group: "Navigate", title: "Open Discover", action: navigate("/discover") },
       { id: "nav-markets", group: "Navigate", title: "Open Markets", action: navigate("/markets") },
       { id: "nav-saved", group: "Navigate", title: "View Saved Stories", action: navigate("/saved") },
+      { id: "nav-history", group: "Navigate", title: "Reading History", action: navigate("/history") },
+      { id: "nav-notifications", group: "Navigate", title: "Notifications", action: navigate("/notifications") },
       { id: "nav-search", group: "Navigate", title: "Open Search", action: navigate("/search") },
       { id: "nav-settings", group: "Navigate", title: "Settings", action: navigate("/settings") },
       ...themeList.map((t) => ({

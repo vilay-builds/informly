@@ -19,6 +19,9 @@ const ROUTE_KEY: Record<string, string> = {
   "/settings": "you",
   "/stock": "markets",
   "/article": "feed",
+  "/brief": "feed",
+  "/history": "you",
+  "/notifications": "feed",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
