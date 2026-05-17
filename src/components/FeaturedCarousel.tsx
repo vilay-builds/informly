@@ -121,36 +121,38 @@ export function FeaturedCarousel() {
             >
               <Link href="/article" className="block h-full">
                 <div
-                  className="absolute inset-0 bg-cover bg-center"
+                  className="absolute inset-0 bg-cover bg-center bg-zinc-900"
                   style={{ backgroundImage: `url(${story.image})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
-                <div className="relative h-full flex flex-col justify-end p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
-                      {story.category}
-                    </span>
-                    <span className="text-[10px] text-white/70">
-                      {story.timeAgo}
-                    </span>
-                  </div>
-                  <h2 className="text-lg font-bold leading-tight text-white mb-2">
-                    {story.title}
-                  </h2>
-                  <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
-                    {story.summary}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-white/60">{story.source}</span>
-                    <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium">
-                      Read more
-                      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
+                {isActive && (
+                  <div className="relative h-full flex flex-col justify-end p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/20">
+                        {story.category}
+                      </span>
+                      <span className="text-[10px] text-white/70">
+                        {story.timeAgo}
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-bold leading-tight text-white mb-2">
+                      {story.title}
+                    </h2>
+                    <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
+                      {story.summary}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-white/60">{story.source}</span>
+                      <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium">
+                        Read more
+                        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </Link>
             </motion.div>
           );
