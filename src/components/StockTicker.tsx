@@ -1,6 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import {
+  motion,
+  useAnimationFrame,
+  useMotionValue,
+  wrap,
+} from "framer-motion";
 
 interface TickerItem {
   ticker: string;
@@ -32,28 +38,59 @@ const indiaStocks: TickerItem[] = [
 
 interface StockTickerProps {
   region?: "us" | "india";
+  speed?: number;
 }
 
-export function StockTicker({ region = "india" }: StockTickerProps) {
+export function StockTicker({
+  region = "india",
+  speed = 60,
+}: StockTickerProps) {
   const baseStocks = region === "india" ? indiaStocks : usStocks;
-  const items = [...baseStocks, ...baseStocks];
+  const items = [...baseStocks, ...baseStocks, ...baseStocks];
+
+  const x = useMotionValue(0);
+  const draggingRef = useRef(false);
+  const trackWidthRef = useRef(0);
+  const trackEl = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (trackEl.current) {
+      // Width of a single set (one third of total since we tripled)
+      trackWidthRef.current = trackEl.current.scrollWidth / 3;
+    }
+  }, [region]);
+
+  useAnimationFrame((_, delta) => {
+    if (draggingRef.current || trackWidthRef.current === 0) return;
+    const moveBy = (-speed * delta) / 1000;
+    const next = wrap(-trackWidthRef.current, 0, x.get() + moveBy);
+    x.set(next);
+  });
 
   return (
     <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
       <motion.div
-        key={region}
-        className="flex gap-6 whitespace-nowrap"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{
-          x: {
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear",
-          },
+        ref={trackEl}
+        className="flex gap-6 whitespace-nowrap cursor-grab active:cursor-grabbing"
+        style={{ x }}
+        drag="x"
+        dragMomentum={false}
+        dragConstraints={{ left: -trackWidthRef.current * 2, right: trackWidthRef.current }}
+        onDragStart={() => {
+          draggingRef.current = true;
+        }}
+        onDragEnd={() => {
+          // Wrap into the valid range so animation continues smoothly
+          const wrapped = wrap(-trackWidthRef.current, 0, x.get());
+          x.set(wrapped);
+          draggingRef.current = false;
         }}
       >
         {items.map((stock, i) => (
-          <div key={i} className="flex items-center gap-1.5 flex-shrink-0">
+          <div
+            key={`${region}-${i}`}
+            className="flex items-center gap-1.5 flex-shrink-0 pointer-events-none select-none"
+          >
             <span className="text-xs font-semibold text-text-primary">
               {stock.ticker}
             </span>

@@ -3,36 +3,8 @@
 import { motion } from "framer-motion";
 import { NewsCard } from "@/components/NewsCard";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
-import { MarketCard } from "@/components/MarketCard";
 import { StockTicker } from "@/components/StockTicker";
 import { BottomNav } from "@/components/BottomNav";
-
-const marketData = [
-  {
-    ticker: "AAPL",
-    name: "Apple Inc.",
-    change: 2.3,
-    reason: "Strong iPhone sales in emerging markets",
-  },
-  {
-    ticker: "NVDA",
-    name: "NVIDIA Corp.",
-    change: 4.1,
-    reason: "New AI chip demand exceeds expectations",
-  },
-  {
-    ticker: "TSLA",
-    name: "Tesla Inc.",
-    change: -1.8,
-    reason: "Production delays at new factory",
-  },
-  {
-    ticker: "MSFT",
-    name: "Microsoft",
-    change: 1.2,
-    reason: "Cloud revenue growth beats estimates",
-  },
-];
 
 const newsStories = [
   {
@@ -147,30 +119,6 @@ export default function Home() {
 
         {/* Featured Carousel */}
         <FeaturedCarousel />
-
-        {/* Market Movers */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-text-primary">
-              Market Movers
-            </h3>
-            <button className="text-xs font-medium text-primary-500">
-              See all
-            </button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5">
-            {marketData.map((stock, i) => (
-              <motion.div
-                key={stock.ticker}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <MarketCard {...stock} />
-              </motion.div>
-            ))}
-          </div>
-        </section>
 
         {/* Today's Stories */}
         <section>

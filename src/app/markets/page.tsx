@@ -17,11 +17,21 @@ const indices = {
     { name: "S&P 500", value: "5,342.18", change: 0.6 },
     { name: "NASDAQ", value: "16,891.45", change: 1.2 },
     { name: "DOW", value: "39,456.78", change: 0.3 },
+    { name: "Russell 2000", value: "2,087.45", change: 1.4 },
+    { name: "VIX", value: "14.23", change: -3.2 },
+    { name: "Gold", value: "2,418.50", change: 0.4 },
+    { name: "Bitcoin", value: "97,234", change: 2.8 },
+    { name: "10Y Yield", value: "4.23", change: -0.5 },
   ],
   india: [
     { name: "NIFTY 50", value: "23,465.70", change: 0.8 },
     { name: "SENSEX", value: "76,892.45", change: 0.7 },
     { name: "NIFTY Bank", value: "50,234.10", change: -0.3 },
+    { name: "NIFTY IT", value: "38,124.80", change: 1.1 },
+    { name: "NIFTY Auto", value: "24,891.15", change: 0.5 },
+    { name: "NIFTY FMCG", value: "57,234.60", change: -0.2 },
+    { name: "India VIX", value: "12.85", change: -4.1 },
+    { name: "Gold (10g)", value: "73,450", change: 0.6 },
   ],
 };
 
@@ -272,27 +282,55 @@ export default function MarketsPage() {
         {/* Indices */}
         <section>
           <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Major Indices
+            Market Indices
           </h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 pb-1">
             {currentIndices.map((index, i) => (
               <motion.div
                 key={`${region}-${index.name}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-surface rounded-xl p-3 border border-border text-center"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="bg-surface rounded-2xl p-4 border border-border flex-shrink-0 min-w-[130px]"
               >
-                <p className="text-[10px] text-text-tertiary mb-1">{index.name}</p>
-                <p className="text-sm font-bold text-text-primary">{index.value}</p>
-                <p
-                  className={`text-xs font-medium mt-0.5 ${
-                    index.change >= 0 ? "text-success-500" : "text-red-500"
+                <p className="text-[10px] text-text-tertiary mb-1.5 truncate">
+                  {index.name}
+                </p>
+                <p className="text-base font-bold text-text-primary mb-1">
+                  {index.value}
+                </p>
+                <div
+                  className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
+                    index.change >= 0
+                      ? "bg-success-400/15 text-success-500"
+                      : "bg-red-100 text-red-500"
                   }`}
                 >
+                  <svg
+                    width="9"
+                    height="9"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    {index.change >= 0 ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    ) : (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                      />
+                    )}
+                  </svg>
                   {index.change >= 0 ? "+" : ""}
                   {index.change}%
-                </p>
+                </div>
               </motion.div>
             ))}
           </div>
