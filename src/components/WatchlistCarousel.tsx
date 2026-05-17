@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { motion, PanInfo, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Stock } from "@/lib/content/types";
@@ -22,6 +22,7 @@ const signalLabel = {
 export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
+  const wasDragging = useRef(false);
 
   // Pre-compute sparkline data once for each stock
   const chartData = useMemo(
@@ -34,6 +35,10 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
     [stocks]
   );
 
+  const handleDragStart = () => {
+    wasDragging.current = true;
+  };
+
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
@@ -44,6 +49,9 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
     } else if (info.offset.x > threshold && index > 0) {
       setIndex(index - 1);
     }
+    setTimeout(() => {
+      wasDragging.current = false;
+    }, 100);
   };
 
   const formatPrice = (p: number, currency: "$" | "₹") =>
@@ -96,6 +104,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                 drag={isActive ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.55}
+                onDragStart={isActive ? handleDragStart : undefined}
                 onDragEnd={isActive ? handleDragEnd : undefined}
                 initial={false}
                 animate={{
@@ -109,7 +118,9 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                 transition={easing.spring}
                 whileDrag={{ rotate: 0, scale: 1.02 }}
                 onClick={() => {
-                  if (isActive) router.push(`/stock/${stock.ticker}`);
+                  if (!isActive) return;
+                  if (wasDragging.current) return;
+                  router.push(`/stock/${stock.ticker}`);
                 }}
                 className="absolute inset-0 cursor-pointer"
               >

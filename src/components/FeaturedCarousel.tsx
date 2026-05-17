@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion, PanInfo } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { getFeaturedArticles } from "@/lib/content/articles";
@@ -10,6 +10,11 @@ export function FeaturedCarousel() {
   const router = useRouter();
   const stories = getFeaturedArticles();
   const [index, setIndex] = useState(0);
+  const wasDragging = useRef(false);
+
+  const handleDragStart = () => {
+    wasDragging.current = true;
+  };
 
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
@@ -21,6 +26,10 @@ export function FeaturedCarousel() {
     } else if (info.offset.x > threshold && index > 0) {
       setIndex(index - 1);
     }
+    // Reset flag on next tick so the upcoming click is suppressed
+    setTimeout(() => {
+      wasDragging.current = false;
+    }, 100);
   };
 
   return (
@@ -52,6 +61,7 @@ export function FeaturedCarousel() {
               drag={isActive ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.6}
+              onDragStart={isActive ? handleDragStart : undefined}
               onDragEnd={isActive ? handleDragEnd : undefined}
               initial={false}
               animate={{
@@ -65,7 +75,9 @@ export function FeaturedCarousel() {
               transition={easing.spring}
               whileDrag={{ rotate: 0, scale: 1.02 }}
               onClick={() => {
-                if (isActive) router.push(`/article/${story.id}`);
+                if (!isActive) return;
+                if (wasDragging.current) return;
+                router.push(`/article/${story.id}`);
               }}
               className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer select-none shadow-xl"
             >
