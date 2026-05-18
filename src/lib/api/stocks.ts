@@ -1,7 +1,10 @@
 // Yahoo Finance wrapper — no API key needed. Free, unlimited.
 
 import "server-only";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
+// v3 requires explicit instantiation per app.
+const yahooFinance = new YahooFinance();
 
 // Loose Yahoo quote shape — yahoo-finance2's union types fight TypeScript narrowing.
 type YQuote = {
