@@ -174,7 +174,9 @@ export async function fetchLatestNews(
 
   try {
     const res = await fetch(url, {
-      next: { revalidate: 600, tags: ["news"] },
+      // 30 min revalidation gives articles a longer reachable window
+      // and keeps NewsData free tier comfortably under quota.
+      next: { revalidate: 1800, tags: ["news"] },
     });
     if (!res.ok) {
       console.error("NewsData error", res.status, await res.text());
@@ -223,12 +225,17 @@ export async function fetchArticleById(
   id: string
 ): Promise<NormalizedArticle | null> {
   if (articleCache.has(id)) return articleCache.get(id) ?? null;
-  // Cast a wide net before giving up
+
+  // CRITICAL: Use the EXACT same fetchLatestNews calls as fetchFeedNews
+  // so that the Next.js fetch cache key matches and we re-hydrate the
+  // same articles the feed showed. Different cache keys = different
+  // data = "rolled off the feed" false positives.
   await Promise.all([
-    fetchLatestNews({ size: 50 }),
-    fetchLatestNews({ country: "in", size: 50 }),
-    fetchLatestNews({ country: "us", size: 50 }),
+    fetchLatestNews({ country: "in", size: 10 }),
+    fetchLatestNews({ country: "us", size: 10 }),
+    fetchLatestNews({ size: 10 }),
   ]);
+
   return articleCache.get(id) ?? null;
 }
 
