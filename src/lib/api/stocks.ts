@@ -58,9 +58,13 @@ export interface LiveStock {
 }
 
 // Yahoo expects India tickers with .NS suffix for NSE listings.
+// Indices (start with ^), crypto (contains -), and forex (=X) are passed through.
 function toYahooSymbol(ticker: string, region: "us" | "india"): string {
   const t = ticker.toUpperCase();
-  if (region === "india" && !t.includes(".")) return `${t}.NS`;
+  if (t.startsWith("^") || t.includes(".") || t.includes("-") || t.includes("=")) {
+    return t;
+  }
+  if (region === "india") return `${t}.NS`;
   return t;
 }
 
@@ -71,6 +75,77 @@ function inferRegion(symbol: string): "us" | "india" {
 function formatCompactNumber(n: number | null | undefined): number | null {
   if (n == null || !Number.isFinite(n)) return null;
   return n;
+}
+
+/**
+ * Try both US and India listings to resolve a free-form ticker.
+ * Returns whichever returns first with a valid price.
+ */
+export async function resolveQuote(
+  ticker: string
+): Promise<{ quote: LiveStock; region: "us" | "india" } | null> {
+  const t = ticker.toUpperCase();
+  // Explicit suffixes win
+  if (t.endsWith(".NS") || t.endsWith(".BO")) {
+    const q = await fetchStockQuote(t.replace(/\.(NS|BO)$/, ""), "india");
+    return q ? { quote: q, region: "india" } : null;
+  }
+  // Try US first (most common); if not found, try India
+  const us = await fetchStockQuote(t, "us");
+  if (us) return { quote: us, region: "us" };
+  const india = await fetchStockQuote(t, "india");
+  if (india) return { quote: india, region: "india" };
+  return null;
+}
+
+export async function fetchBusinessSummary(
+  ticker: string,
+  region: "us" | "india"
+): Promise<string | null> {
+  const symbol = toYahooSymbol(ticker, region);
+  try {
+    const result = (await yahooFinance.quoteSummary(symbol, {
+      modules: ["assetProfile"],
+    })) as unknown as {
+      assetProfile?: { longBusinessSummary?: string };
+    };
+    return result?.assetProfile?.longBusinessSummary ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchStockNews(
+  ticker: string,
+  region: "us" | "india"
+): Promise<{ title: string; link: string; publisher: string; publishedAt: string }[]> {
+  const symbol = toYahooSymbol(ticker, region);
+  try {
+    const result = (await yahooFinance.search(symbol, {
+      newsCount: 5,
+      quotesCount: 0,
+    })) as unknown as {
+      news?: Array<{
+        title?: string;
+        link?: string;
+        publisher?: string;
+        providerPublishTime?: number;
+      }>;
+    };
+    return (result.news ?? [])
+      .filter((n) => n.title && n.link)
+      .map((n) => ({
+        title: n.title!,
+        link: n.link!,
+        publisher: n.publisher ?? "Yahoo Finance",
+        publishedAt: n.providerPublishTime
+          ? new Date(n.providerPublishTime * 1000).toISOString()
+          : new Date().toISOString(),
+      }));
+  } catch (err) {
+    console.error(`Yahoo news failed for ${symbol}`, err);
+    return [];
+  }
 }
 
 export async function fetchStockQuote(

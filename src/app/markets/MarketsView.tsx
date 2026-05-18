@@ -251,30 +251,37 @@ export default function MarketsView({
               : "bg-gradient-to-br from-accent-50 to-accent-100/50 border-accent-200/50"
           }`}
         >
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                region === "us" ? "bg-primary-200" : "bg-accent-200"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                region === "us"
+                  ? "bg-primary-200/60 text-primary-800"
+                  : "bg-accent-200/60 text-accent-800"
               }`}
             >
-              <svg
-                width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
-                className={region === "us" ? "text-primary-700" : "text-accent-700"}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
+              Market Summary
             </div>
-            <h2
-              className={`text-sm font-semibold ${
-                region === "us" ? "text-primary-800" : "text-accent-800"
+            <span
+              className={`text-[10px] ${
+                region === "us" ? "text-primary-700/60" : "text-accent-700/60"
               }`}
             >
-              {marketSummary.title}
-            </h2>
+              AI · refreshed every 15 min
+            </span>
           </div>
+          <h2
+            className={`text-base font-bold leading-snug mb-2 ${
+              region === "us" ? "text-primary-900" : "text-accent-900"
+            }`}
+          >
+            {marketSummary.title}
+          </h2>
           <p
             className={`text-sm leading-relaxed ${
-              region === "us" ? "text-primary-700" : "text-accent-700"
+              region === "us" ? "text-primary-800" : "text-accent-800"
             }`}
           >
             {marketSummary.explanation}

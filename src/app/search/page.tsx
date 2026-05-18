@@ -20,7 +20,6 @@ interface Result {
 }
 
 import { getAllArticles } from "@/lib/content/articles";
-import { getAllStocks } from "@/lib/content/stocks";
 
 const ARTICLE_RESULTS: Result[] = getAllArticles().map((a) => ({
   type: "article",
@@ -32,14 +31,14 @@ const ARTICLE_RESULTS: Result[] = getAllArticles().map((a) => ({
   image: a.image,
 }));
 
-const STOCK_RESULTS: Result[] = getAllStocks().map((s) => ({
-  type: "stock",
-  id: s.ticker,
-  title: s.ticker,
-  subtitle: s.name,
-  meta: `${s.change >= 0 ? "+" : ""}${s.change}%`,
-  href: `/stock/${s.ticker}`,
-}));
+interface YahooSearchHit {
+  symbol: string;
+  ticker: string;
+  name: string;
+  exchange: string;
+  type: string;
+  isIndia: boolean;
+}
 
 const MOCK_TOPICS: Result[] = [
   { type: "topic", id: "t1", title: "Artificial Intelligence", subtitle: "84 stories this week", href: "#" },
@@ -79,6 +78,7 @@ export default function SearchPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
+  const [stockHits, setStockHits] = useState<YahooSearchHit[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -86,20 +86,53 @@ export default function SearchPage() {
     inputRef.current?.focus();
   }, []);
 
+  // Debounced Yahoo stock search
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 1) {
+      setStockHits([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { results: YahooSearchHit[] };
+        setStockHits(data.results);
+      } catch {
+        // silent
+      }
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [query]);
+
   const results = useMemo(() => {
     if (!query.trim()) return null;
     const q = query.toLowerCase();
-    const matchAll = [...ARTICLE_RESULTS, ...STOCK_RESULTS, ...MOCK_TOPICS].filter(
+    const articleMatches = ARTICLE_RESULTS.filter(
       (r) =>
         r.title.toLowerCase().includes(q) ||
         r.subtitle?.toLowerCase().includes(q)
     );
+    const topicMatches = MOCK_TOPICS.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.subtitle?.toLowerCase().includes(q)
+    );
+    const stockResults: Result[] = stockHits.map((h) => ({
+      type: "stock",
+      id: h.ticker,
+      title: h.ticker,
+      subtitle: h.name,
+      meta: `${h.exchange} · ${h.type}`,
+      href: `/stock/${h.ticker}`,
+    }));
     return {
-      articles: matchAll.filter((r) => r.type === "article"),
-      stocks: matchAll.filter((r) => r.type === "stock"),
-      topics: matchAll.filter((r) => r.type === "topic"),
+      articles: articleMatches,
+      stocks: stockResults,
+      topics: topicMatches,
     };
-  }, [query]);
+  }, [query, stockHits]);
 
   const handleSearchClick = (q: string) => {
     pushRecent(q);
@@ -222,31 +255,32 @@ export default function SearchPage() {
                   Popular stocks
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5">
-                  {STOCK_RESULTS.slice(0, 6).map((s) => {
-                    const positive = s.meta?.startsWith("+");
-                    return (
-                      <Link
-                        key={s.id}
-                        href={s.href}
-                        className="bg-surface border border-border rounded-xl p-3 flex items-center justify-between hover:border-border-hover"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-text-primary">
-                            {s.title}
-                          </p>
-                          <p className="text-[11px] text-text-tertiary truncate">
-                            {s.subtitle}
-                          </p>
-                        </div>
-                        <Pill
-                          variant={positive ? "success" : "danger"}
-                          size="xs"
-                        >
-                          {s.meta}
-                        </Pill>
-                      </Link>
-                    );
-                  })}
+                  {[
+                    { ticker: "AAPL", name: "Apple Inc." },
+                    { ticker: "NVDA", name: "NVIDIA Corp." },
+                    { ticker: "RELIANCE", name: "Reliance Industries" },
+                    { ticker: "TSLA", name: "Tesla Inc." },
+                    { ticker: "TCS", name: "Tata Consultancy" },
+                    { ticker: "MSFT", name: "Microsoft" },
+                  ].map((s) => (
+                    <Link
+                      key={s.ticker}
+                      href={`/stock/${s.ticker}`}
+                      className="bg-surface border border-border rounded-xl p-3 flex items-center justify-between hover:border-border-hover"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-text-primary">
+                          {s.ticker}
+                        </p>
+                        <p className="text-[11px] text-text-tertiary truncate">
+                          {s.name}
+                        </p>
+                      </div>
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary flex-shrink-0">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  ))}
                 </div>
               </section>
             </motion.div>
@@ -275,35 +309,34 @@ export default function SearchPage() {
                   {results.stocks.length > 0 && (
                     <section>
                       <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-                        Stocks
+                        Stocks & ETFs
                       </h3>
                       <div className="space-y-2">
-                        {results.stocks.map((s) => {
-                          const positive = s.meta?.startsWith("+");
-                          return (
-                            <motion.div key={s.id} variants={fadeInUp}>
-                              <Link
-                                href={s.href}
-                                className="block bg-surface border border-border rounded-2xl p-4 flex items-center justify-between hover:border-border-hover"
-                              >
-                                <div>
-                                  <p className="text-sm font-bold text-text-primary">
-                                    {s.title}
-                                  </p>
-                                  <p className="text-xs text-text-tertiary">
-                                    {s.subtitle}
-                                  </p>
-                                </div>
-                                <Pill
-                                  variant={positive ? "success" : "danger"}
-                                  size="sm"
-                                >
+                        {results.stocks.map((s) => (
+                          <motion.div key={s.id} variants={fadeInUp}>
+                            <Link
+                              href={s.href}
+                              className="block bg-surface border border-border rounded-2xl p-4 flex items-center justify-between hover:border-border-hover"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-text-primary">
+                                  {s.title}
+                                </p>
+                                <p className="text-xs text-text-tertiary truncate">
+                                  {s.subtitle}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                <span className="text-[10px] text-text-tertiary">
                                   {s.meta}
-                                </Pill>
-                              </Link>
-                            </motion.div>
-                          );
-                        })}
+                                </span>
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </Link>
+                          </motion.div>
+                        ))}
                       </div>
                     </section>
                   )}

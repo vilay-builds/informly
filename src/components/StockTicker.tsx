@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useAnimationFrame,
@@ -10,43 +10,26 @@ import {
 
 interface TickerItem {
   ticker: string;
-  price: string;
-  change: number;
+  price: number;
+  changePercent: number;
 }
-
-const usStocks: TickerItem[] = [
-  { ticker: "AAPL", price: "198.45", change: 2.3 },
-  { ticker: "NVDA", price: "1,245.80", change: 4.1 },
-  { ticker: "TSLA", price: "178.20", change: -1.8 },
-  { ticker: "MSFT", price: "442.15", change: 1.2 },
-  { ticker: "AMZN", price: "189.30", change: 0.8 },
-  { ticker: "GOOGL", price: "176.55", change: -0.4 },
-  { ticker: "META", price: "512.70", change: 3.2 },
-  { ticker: "SPY", price: "534.20", change: 0.6 },
-];
-
-const indiaStocks: TickerItem[] = [
-  { ticker: "RELIANCE", price: "2,945.30", change: 1.4 },
-  { ticker: "TCS", price: "3,712.80", change: 0.9 },
-  { ticker: "HDFCBANK", price: "1,678.90", change: 2.1 },
-  { ticker: "INFY", price: "1,456.25", change: -0.6 },
-  { ticker: "BHARTIARTL", price: "1,534.60", change: 1.7 },
-  { ticker: "ITC", price: "442.15", change: 0.3 },
-  { ticker: "NIFTY", price: "23,465.70", change: 0.8 },
-  { ticker: "SENSEX", price: "76,892.45", change: 0.7 },
-];
 
 interface StockTickerProps {
   region?: "us" | "india";
   speed?: number;
 }
 
+function formatPrice(n: number, region: "us" | "india"): string {
+  return n.toLocaleString(region === "india" ? "en-IN" : "en-US", {
+    maximumFractionDigits: 2,
+  });
+}
+
 export function StockTicker({
   region = "india",
   speed = 60,
 }: StockTickerProps) {
-  const baseStocks = region === "india" ? indiaStocks : usStocks;
-  const items = [...baseStocks, ...baseStocks, ...baseStocks];
+  const [items, setItems] = useState<TickerItem[]>([]);
 
   const x = useMotionValue(0);
   const draggingRef = useRef(false);
@@ -54,11 +37,33 @@ export function StockTicker({
   const trackEl = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (trackEl.current) {
-      // Width of a single set (one third of total since we tripled)
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/ticker?region=${region}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { items: TickerItem[] };
+        if (!cancelled && data.items?.length) setItems(data.items);
+      } catch {
+        // silent
+      }
+    }
+    load();
+    // Refresh every 2 minutes
+    const interval = setInterval(load, 120_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [region]);
+
+  useEffect(() => {
+    if (trackEl.current && items.length > 0) {
       trackWidthRef.current = trackEl.current.scrollWidth / 3;
     }
-  }, [region]);
+  }, [items, region]);
 
   useAnimationFrame((_, delta) => {
     if (draggingRef.current || trackWidthRef.current === 0) return;
@@ -66,6 +71,17 @@ export function StockTicker({
     const next = wrap(-trackWidthRef.current, 0, x.get() + moveBy);
     x.set(next);
   });
+
+  if (items.length === 0) {
+    return (
+      <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
+        <div className="text-xs text-text-tertiary text-center">Loading prices…</div>
+      </div>
+    );
+  }
+
+  // Triple-loop so wrap is seamless
+  const loop = [...items, ...items, ...items];
 
   return (
     <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
@@ -75,33 +91,33 @@ export function StockTicker({
         style={{ x }}
         drag="x"
         dragMomentum={false}
-        dragConstraints={{ left: -trackWidthRef.current * 2, right: trackWidthRef.current }}
         onDragStart={() => {
           draggingRef.current = true;
         }}
         onDragEnd={() => {
-          // Wrap into the valid range so animation continues smoothly
           const wrapped = wrap(-trackWidthRef.current, 0, x.get());
           x.set(wrapped);
           draggingRef.current = false;
         }}
       >
-        {items.map((stock, i) => (
+        {loop.map((stock, i) => (
           <div
-            key={`${region}-${i}`}
+            key={`${region}-${i}-${stock.ticker}`}
             className="flex items-center gap-1.5 flex-shrink-0 pointer-events-none select-none"
           >
             <span className="text-xs font-semibold text-text-primary">
               {stock.ticker}
             </span>
-            <span className="text-xs text-text-secondary">{stock.price}</span>
+            <span className="text-xs text-text-secondary tabular-nums">
+              {formatPrice(stock.price, region)}
+            </span>
             <span
-              className={`text-xs font-medium ${
-                stock.change >= 0 ? "text-success-500" : "text-red-500"
+              className={`text-xs font-medium tabular-nums ${
+                stock.changePercent >= 0 ? "text-success-500" : "text-red-500"
               }`}
             >
-              {stock.change >= 0 ? "+" : ""}
-              {stock.change.toFixed(1)}%
+              {stock.changePercent >= 0 ? "+" : ""}
+              {stock.changePercent.toFixed(2)}%
             </span>
           </div>
         ))}

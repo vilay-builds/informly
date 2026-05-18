@@ -147,6 +147,109 @@ SOURCE: ${article.source}`;
   }
 }
 
+export interface StockCommentary {
+  about: string;
+  signal: "bullish" | "bearish" | "neutral";
+  signalReason: string;
+  analystSummary: string;
+  metricExplanations: Record<string, string>;
+}
+
+const STOCK_COMMENTARY_CACHE = new Map<
+  string,
+  { commentary: StockCommentary; expiresAt: number }
+>();
+
+export async function explainStock(input: {
+  ticker: string;
+  name: string;
+  longBusinessSummary?: string;
+  price: number;
+  changePercent: number;
+  marketCap: number | null;
+  peRatio: number | null;
+  weekHigh: number | null;
+  weekLow: number | null;
+  recentNewsTitles?: string[];
+}): Promise<StockCommentary> {
+  const cacheKey = input.ticker.toUpperCase();
+  const cached = STOCK_COMMENTARY_CACHE.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.commentary;
+
+  const c = client();
+  if (!c) {
+    return {
+      about: input.longBusinessSummary ?? `${input.name} is a publicly traded company.`,
+      signal:
+        input.changePercent > 1 ? "bullish" : input.changePercent < -1 ? "bearish" : "neutral",
+      signalReason: "Live AI commentary is temporarily unavailable.",
+      analystSummary: "Analyst summary is temporarily unavailable.",
+      metricExplanations: {},
+    };
+  }
+
+  const newsBlock = input.recentNewsTitles?.length
+    ? `\nRecent headlines:\n${input.recentNewsTitles.slice(0, 5).map((t) => `- ${t}`).join("\n")}`
+    : "";
+
+  const prompt = `You are Nova's calm equity interpreter. Given live data on a publicly traded stock, write beginner-friendly commentary that helps a casual investor understand it.
+
+STOCK: ${input.ticker} (${input.name})
+PRICE: ${input.price}
+DAY CHANGE: ${input.changePercent.toFixed(2)}%
+MARKET CAP: ${input.marketCap ?? "N/A"}
+P/E: ${input.peRatio ?? "N/A"}
+52W RANGE: ${input.weekLow ?? "?"} – ${input.weekHigh ?? "?"}
+${input.longBusinessSummary ? `\nBUSINESS DESCRIPTION:\n${input.longBusinessSummary.slice(0, 1200)}` : ""}${newsBlock}
+
+Return ONLY valid JSON, no markdown, in this shape:
+{
+  "about": "2-3 sentence plain-language explanation of what this company does. Avoid jargon.",
+  "signal": "bullish" | "bearish" | "neutral",
+  "signalReason": "2-3 sentences explaining the current signal in plain language. Reference the recent move and any obvious drivers.",
+  "analystSummary": "2-3 sentences with the general analyst stance and any near-term catalysts. If unknown, be honest and say so.",
+  "metricExplanations": {
+    "P/E Ratio": "1-2 sentences explaining this stock's P/E in beginner terms",
+    "Market Cap": "1 sentence putting the cap in context",
+    "52-Week Range": "1 sentence on whether it's near highs or lows",
+    "Day Change": "1 sentence on what today's % move means"
+  }
+}
+
+Never use emojis. Never embellish facts. If a metric is missing, write "Data not available" for that key.`;
+
+  try {
+    const model = c.getGenerativeModel({
+      model: MODEL_NAME,
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.6,
+        maxOutputTokens: 1500,
+      },
+    });
+    const result = await model.generateContent(prompt);
+    const text = stripJsonFences(result.response.text());
+    const parsed = JSON.parse(text) as StockCommentary;
+    if (!parsed.about || !parsed.signal) throw new Error("Invalid stock JSON");
+
+    STOCK_COMMENTARY_CACHE.set(cacheKey, {
+      commentary: parsed,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24h
+    });
+    return parsed;
+  } catch (err) {
+    console.error("Stock explain failed", err);
+    return {
+      about: input.longBusinessSummary ?? `${input.name} is a publicly traded company.`,
+      signal:
+        input.changePercent > 1 ? "bullish" : input.changePercent < -1 ? "bearish" : "neutral",
+      signalReason: "Live AI commentary is temporarily unavailable.",
+      analystSummary: "Analyst summary is temporarily unavailable.",
+      metricExplanations: {},
+    };
+  }
+}
+
 export interface MarketSummary {
   title: string;
   explanation: string;

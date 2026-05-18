@@ -1,365 +1,118 @@
-"use client";
-
-import { use, useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { StockChart, generateChartData } from "@/components/StockChart";
-import { Pill } from "@/components/ui";
-import { useWatchlist } from "@/lib/persistence";
-import { useToast } from "@/components/Toast";
-import { getStockByTicker } from "@/lib/content/stocks";
+import {
+  resolveQuote,
+  fetchBusinessSummary,
+  fetchStockNews,
+  formatCompact,
+} from "@/lib/api/stocks";
+import { explainStock } from "@/lib/api/gemini";
+import StockView, { StockViewData } from "./StockView";
 
-const ranges = ["1D", "1W", "1M", "3M", "1Y", "5Y"] as const;
-type Range = (typeof ranges)[number];
+export const dynamic = "force-dynamic";
 
-const rangePointCounts: Record<Range, number> = {
-  "1D": 24,
-  "1W": 28,
-  "1M": 30,
-  "3M": 40,
-  "1Y": 52,
-  "5Y": 60,
-};
-
-const rangeChangeMultipliers: Record<Range, number> = {
-  "1D": 1,
-  "1W": 1.8,
-  "1M": 3.2,
-  "3M": 5.5,
-  "1Y": 12,
-  "5Y": 25,
-};
-
-const signalStyles = {
-  bullish: {
-    bg: "bg-success-400/15",
-    color: "text-success-500",
-    border: "border-success-400/30",
-    label: "Bullish — Looking Good",
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
-  },
-  bearish: {
-    bg: "bg-red-50",
-    color: "text-red-500",
-    border: "border-red-200",
-    label: "Bearish — Use Caution",
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-      </svg>
-    ),
-  },
-  neutral: {
-    bg: "bg-yellow-50",
-    color: "text-yellow-600",
-    border: "border-yellow-200",
-    label: "Neutral — Wait & Watch",
-    icon: (
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-      </svg>
-    ),
-  },
-};
-
-export default function StockPage({
+export default async function StockPage({
   params,
 }: {
   params: Promise<{ ticker: string }>;
 }) {
-  const { ticker: rawTicker } = use(params);
-  const stock = getStockByTicker(rawTicker);
-  if (!stock) notFound();
+  const { ticker: rawTicker } = await params;
+  const ticker = decodeURIComponent(rawTicker).toUpperCase();
 
-  const signal = signalStyles[stock.signal];
-  const [expandedMetric, setExpandedMetric] = useState<number | null>(null);
-  const [range, setRange] = useState<Range>("1M");
-  const { isWatched, toggle: toggleWatch } = useWatchlist(stock.region);
-  const toast = useToast();
+  const resolved = await resolveQuote(ticker);
+  if (!resolved) notFound();
 
-  const isPositive = stock.change >= 0;
-  const watching = isWatched(stock.ticker);
+  const { quote, region } = resolved;
 
-  const chartData = useMemo(() => {
-    const points = rangePointCounts[range];
-    const totalChange = (stock.change / 100) * rangeChangeMultipliers[range];
-    const startPrice = stock.price / (1 + totalChange);
-    return generateChartData(startPrice, stock.price, points, 0.012);
-  }, [range, stock.price, stock.change]);
+  const [businessSummary, news] = await Promise.all([
+    fetchBusinessSummary(quote.ticker, region),
+    fetchStockNews(quote.ticker, region),
+  ]);
 
-  const formatPrice = (p: number) =>
-    stock.currency === "₹"
-      ? p.toLocaleString("en-IN", { maximumFractionDigits: 2 })
-      : p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const commentary = await explainStock({
+    ticker: quote.ticker,
+    name: quote.name,
+    longBusinessSummary: businessSummary ?? undefined,
+    price: quote.price,
+    changePercent: quote.changePercent,
+    marketCap: quote.marketCap,
+    peRatio: quote.peRatio,
+    weekHigh: quote.weekHigh,
+    weekLow: quote.weekLow,
+    recentNewsTitles: news.slice(0, 3).map((n) => n.title),
+  });
 
-  const handleToggleWatch = () => {
-    toggleWatch(stock.ticker);
-    toast.show({
-      message: watching
-        ? `${stock.ticker} removed from watchlist`
-        : `${stock.ticker} added to watchlist`,
-      variant: "success",
-    });
+  const stats = [
+    {
+      label: "Market Cap",
+      value: formatCompact(quote.marketCap, quote.currency),
+    },
+    {
+      label: "Volume",
+      value:
+        quote.volume != null
+          ? quote.volume >= 1e6
+            ? `${(quote.volume / 1e6).toFixed(1)}M`
+            : quote.volume.toLocaleString()
+          : "—",
+    },
+    {
+      label: "Day Range",
+      value:
+        quote.dayLow && quote.dayHigh
+          ? `${quote.dayLow.toFixed(2)} – ${quote.dayHigh.toFixed(2)}`
+          : "—",
+    },
+    {
+      label: "52W Range",
+      value:
+        quote.weekLow && quote.weekHigh
+          ? `${quote.weekLow.toFixed(2)} – ${quote.weekHigh.toFixed(2)}`
+          : "—",
+    },
+  ];
+
+  const metricList = [
+    { label: "P/E Ratio", value: quote.peRatio?.toFixed(2) ?? "—" },
+    {
+      label: "Market Cap",
+      value: formatCompact(quote.marketCap, quote.currency),
+    },
+    {
+      label: "52-Week Range",
+      value:
+        quote.weekLow && quote.weekHigh
+          ? `${quote.weekLow.toFixed(2)} – ${quote.weekHigh.toFixed(2)}`
+          : "—",
+    },
+    {
+      label: "Day Change",
+      value: `${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%`,
+    },
+  ];
+
+  const metrics = metricList.map((m) => ({
+    label: m.label,
+    value: m.value,
+    explanation:
+      commentary.metricExplanations?.[m.label] ?? "Explanation unavailable.",
+  }));
+
+  const viewData: StockViewData = {
+    ticker: quote.ticker,
+    name: quote.name,
+    exchange: quote.exchange,
+    region,
+    currency: quote.currency,
+    price: quote.price,
+    changePercent: quote.changePercent,
+    stats,
+    metrics,
+    signal: commentary.signal,
+    signalReason: commentary.signalReason,
+    about: commentary.about,
+    analystSummary: commentary.analystSummary,
+    news,
   };
 
-  return (
-    <div className="min-h-screen pb-12">
-      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-2xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/markets"
-              aria-label="Back to markets"
-              className="w-9 h-9 rounded-full bg-surface flex items-center justify-center border border-border"
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <Pill
-              variant={isPositive ? "success" : "danger"}
-              size="sm"
-            >
-              {stock.ticker} {isPositive ? "+" : ""}
-              {stock.change}%
-            </Pill>
-          </div>
-
-          <button
-            onClick={handleToggleWatch}
-            aria-label={watching ? "Remove from watchlist" : "Add to watchlist"}
-            className="w-9 h-9 rounded-full bg-surface flex items-center justify-center border border-border"
-          >
-            <svg
-              width="18"
-              height="18"
-              fill={watching ? "#f59e0b" : "none"}
-              viewBox="0 0 24 24"
-              stroke={watching ? "#f59e0b" : "currentColor"}
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-2xl mx-auto px-5 pt-6 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <p className="text-xs text-text-tertiary mb-1">Last traded price</p>
-          <p className="text-4xl font-bold text-text-primary tracking-tight">
-            <span className="text-2xl text-text-tertiary mr-1">
-              {stock.currency}
-            </span>
-            {formatPrice(stock.price)}
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-sm font-medium text-text-secondary">
-              {stock.name}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-text-tertiary" />
-            <span
-              className={`text-sm font-semibold ${
-                isPositive ? "text-success-500" : "text-red-500"
-              }`}
-            >
-              {isPositive ? "+" : ""}
-              {stock.change}% ({range})
-            </span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-surface rounded-3xl p-5 border border-border"
-        >
-          <StockChart
-            data={chartData}
-            isPositive={isPositive}
-            height={200}
-            currency={stock.currency}
-          />
-
-          <div className="flex items-center gap-1.5 mt-4 bg-surface-secondary rounded-full p-1">
-            {ranges.map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                  range === r
-                    ? "bg-primary-500 text-white shadow-sm"
-                    : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-surface rounded-2xl p-4 border border-border"
-        >
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Market Stats
-          </h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            {stock.stats.map((stat) => (
-              <div key={stat.label} className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary">{stat.label}</span>
-                <span className="text-xs font-semibold text-text-primary">
-                  {stat.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className={`rounded-2xl p-5 border ${signal.bg} ${signal.border}`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className={signal.color}>{signal.icon}</span>
-            <h3 className={`text-sm font-bold ${signal.color}`}>
-              {signal.label}
-            </h3>
-          </div>
-          <p className="text-sm text-text-secondary leading-relaxed">
-            {stock.signalReason}
-          </p>
-        </motion.section>
-
-        <section className="bg-surface rounded-2xl p-5 border border-border">
-          <h3 className="text-sm font-semibold text-text-primary mb-2">
-            What does {stock.name} do?
-          </h3>
-          <p className="text-sm text-text-secondary leading-relaxed">
-            {stock.about}
-          </p>
-        </section>
-
-        <section>
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Key Metrics — Tap to understand
-          </h3>
-          <div className="space-y-2">
-            {stock.metrics.map((metric, i) => (
-              <motion.div
-                key={metric.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + i * 0.04 }}
-                className="bg-surface rounded-xl border border-border overflow-hidden cursor-pointer"
-                onClick={() =>
-                  setExpandedMetric(expandedMetric === i ? null : i)
-                }
-              >
-                <div className="flex items-center justify-between p-4">
-                  <span className="text-sm text-text-secondary">
-                    {metric.label}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-text-primary">
-                      {metric.value}
-                    </span>
-                    <motion.svg
-                      width="14"
-                      height="14"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-text-tertiary"
-                      animate={{ rotate: expandedMetric === i ? 180 : 0 }}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </motion.svg>
-                  </div>
-                </div>
-                <motion.div
-                  initial={false}
-                  animate={{
-                    height: expandedMetric === i ? "auto" : 0,
-                    opacity: expandedMetric === i ? 1 : 0,
-                  }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 pb-4">
-                    <div className="pt-3 border-t border-border">
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {metric.explanation}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-primary-50 rounded-2xl p-5 border border-primary-100">
-          <h3 className="text-sm font-semibold text-primary-700 mb-2">
-            What Analysts Are Saying
-          </h3>
-          <p className="text-sm text-primary-800 leading-relaxed">
-            {stock.analystSummary}
-          </p>
-        </section>
-
-        <section className="pb-6">
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Latest News
-          </h3>
-          <div className="space-y-2">
-            {stock.news.map((item, i) =>
-              item.articleId ? (
-                <Link
-                  key={i}
-                  href={`/article/${item.articleId}`}
-                  className="block bg-surface rounded-xl p-4 border border-border hover:border-border-hover transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-text-primary leading-snug flex-1 mr-3">
-                      {item.title}
-                    </p>
-                    <span className="text-xs text-text-tertiary whitespace-nowrap">
-                      {item.timeAgo}
-                    </span>
-                  </div>
-                </Link>
-              ) : (
-                <div
-                  key={i}
-                  className="bg-surface rounded-xl p-4 border border-border flex items-center justify-between"
-                >
-                  <p className="text-sm text-text-primary leading-snug flex-1 mr-3">
-                    {item.title}
-                  </p>
-                  <span className="text-xs text-text-tertiary whitespace-nowrap">
-                    {item.timeAgo}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </section>
-      </main>
-    </div>
-  );
+  return <StockView stock={viewData} />;
 }
