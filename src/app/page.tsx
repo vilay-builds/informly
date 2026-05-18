@@ -14,7 +14,7 @@ export default async function HomePage() {
   const live = await fetchFeedNews("in");
 
   const articles: FeedArticle[] = live
-    .filter((a) => a.image)
+    .filter((a) => a.title && a.image)
     .slice(0, 14)
     .map((a) => ({
       id: a.id,
@@ -28,6 +28,8 @@ export default async function HomePage() {
       readTime: estimateReadTime(a.body),
     }));
 
+  // Featured carousel takes only articles that have real news-provided images
+  // (not category fallbacks), so the For You section always looks great.
   const featured = articles.slice(0, 5);
   const rest = articles.slice(5);
 

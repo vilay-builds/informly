@@ -26,6 +26,7 @@ export interface ExplainedLevel {
 
 export interface ExplainedPayload {
   aiSummary: string;
+  expandedBody: string; // Nova-quality article (3-5 paragraphs) when source is thin
   levels: [ExplainedLevel, ExplainedLevel, ExplainedLevel, ExplainedLevel];
   relatedTopics: string[];
 }
@@ -36,25 +37,31 @@ const MAX_EXPLANATION_CACHE = 200;
 
 const SYSTEM_PROMPT = `You are Nova's news interpreter. Nova is a calm news app for people who feel overwhelmed by traditional news — built to help them understand the world without jargon, fear, or fatigue.
 
-You are given a news article. Your job is to generate 4 reading-level explanations PLUS a short AI summary PLUS 3-5 related topic tags.
+You receive a news article (often only a headline and 1-2 sentence summary from a news aggregator). Produce:
 
-Each of the 4 levels has 3 fields:
-- "meaning": What this story actually means in practical terms
-- "context": Background — why this is happening, what led up to it
-- "impact": Why this matters to the reader's life or to the broader world
+1. "aiSummary" — a calm, paraphrased 2-sentence summary of what happened.
+2. "expandedBody" — a thoughtful Nova-original write-up of the story across 3-5 paragraphs. Use the source title and summary as anchors, but flesh out the story with the obvious context a well-informed reader would know. Maintain a journalistic, factual tone. Never fabricate specific numbers, quotes, or names not implied by the source. If you genuinely don't know something, frame it as a question or note that "details are still emerging".
+3. "relatedTopics" — 3-5 short topic tags, 1-3 words each.
+4. "levels" — 4 reading-level explanations. Each level has 3 fields: "meaning" (what it actually means in practical terms), "context" (background, what led to it), "impact" (why it matters to the reader).
 
 LEVEL TONE GUIDE:
-- Beginner: Everyday language. Zero jargon. Like a kind friend explaining it. Short sentences (1–2 per field).
-- Simple: Clear and approachable, slightly more detail. 2–3 sentences per field.
-- Standard: Standard news language with terms explained where needed. 2–3 sentences per field.
-- Expert: Detailed analysis with full financial/political/scientific terminology. 2–4 sentences per field.
+- Beginner: Everyday language. Zero jargon. Like a kind friend explaining it. 1-2 sentences per field.
+- Simple: Clear and approachable with a bit more depth. 2-3 sentences per field.
+- Standard: Standard news language with terms explained where needed. 2-3 sentences per field.
+- Expert: Detailed analysis with full financial/political/scientific terminology. 2-4 sentences per field.
 
-NEVER use emojis. NEVER add markdown formatting. NEVER fabricate facts not implied by the article. If the article is too thin to write expert-level commentary, keep it factual rather than embellishing.
+GENERAL RULES:
+- NEVER use emojis.
+- NEVER add markdown formatting (no **bold**, no headers).
+- NEVER fabricate facts. If something isn't in the source and isn't general knowledge, don't claim it.
+- Match the language and reading level of the source article.
+- Keep an even, calm tone. No alarmism, no hype.
 
-Return ONLY valid JSON in this exact shape, with no markdown fences:
+Return ONLY valid JSON in this exact shape (no markdown fences, no preamble):
 {
-  "aiSummary": "A calm 2-sentence summary of what happened.",
-  "relatedTopics": ["3-5 short topic tags, 1-3 words each"],
+  "aiSummary": "...",
+  "expandedBody": "Paragraph 1.\\n\\nParagraph 2.\\n\\nParagraph 3.\\n\\nOptional paragraph 4.",
+  "relatedTopics": ["..."],
   "levels": [
     {"meaning": "...", "context": "...", "impact": "..."},
     {"meaning": "...", "context": "...", "impact": "..."},
@@ -71,7 +78,7 @@ function stripJsonFences(text: string): string {
   return trimmed;
 }
 
-function fallbackPayload(article: { title: string; aiSummary: string }): ExplainedPayload {
+function fallbackPayload(article: { title: string; aiSummary: string; body?: string }): ExplainedPayload {
   const m = article.aiSummary || article.title;
   const stubLevel = (style: string): ExplainedLevel => ({
     meaning: `${style} ${m}`,
@@ -80,6 +87,7 @@ function fallbackPayload(article: { title: string; aiSummary: string }): Explain
   });
   return {
     aiSummary: article.aiSummary || article.title,
+    expandedBody: article.body || article.aiSummary || article.title,
     relatedTopics: [],
     levels: [
       stubLevel("Here's what happened:"),
@@ -120,7 +128,7 @@ SOURCE: ${article.source}`;
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.7,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
       },
     });
 
@@ -132,6 +140,7 @@ SOURCE: ${article.source}`;
     if (!parsed.levels || parsed.levels.length !== 4) {
       throw new Error("Invalid Gemini response shape");
     }
+    if (!parsed.expandedBody) parsed.expandedBody = article.body || article.aiSummary;
 
     // Cache (with LRU-style eviction)
     if (explanationCache.size >= MAX_EXPLANATION_CACHE) {

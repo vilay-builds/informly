@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { StockChart, generateChartData } from "@/components/StockChart";
+import { StockChart } from "@/components/StockChart";
 import { Pill } from "@/components/ui";
 import { useWatchlist } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
@@ -11,22 +11,13 @@ import { useToast } from "@/components/Toast";
 const ranges = ["1D", "1W", "1M", "3M", "1Y", "5Y"] as const;
 type Range = (typeof ranges)[number];
 
-const rangePointCounts: Record<Range, number> = {
-  "1D": 24,
-  "1W": 28,
-  "1M": 30,
-  "3M": 40,
-  "1Y": 52,
-  "5Y": 60,
-};
-
-const rangeChangeMultipliers: Record<Range, number> = {
-  "1D": 1,
-  "1W": 1.8,
-  "1M": 3.2,
-  "3M": 5.5,
-  "1Y": 12,
-  "5Y": 25,
+const rangeApiMap: Record<Range, string> = {
+  "1D": "1d",
+  "1W": "5d",
+  "1M": "1mo",
+  "3M": "3mo",
+  "1Y": "1y",
+  "5Y": "5y",
 };
 
 type Signal = "bullish" | "bearish" | "neutral";
@@ -82,11 +73,15 @@ export interface StockViewData {
   about: string;
   analystSummary: string;
   news: { title: string; link: string; publisher: string; publishedAt: string }[];
+  initialChartData: number[];
+  initialChartRange: Range;
 }
 
 export default function StockView({ stock }: { stock: StockViewData }) {
   const [expandedMetric, setExpandedMetric] = useState<number | null>(null);
-  const [range, setRange] = useState<Range>("1M");
+  const [range, setRange] = useState<Range>(stock.initialChartRange);
+  const [chartData, setChartData] = useState<number[]>(stock.initialChartData);
+  const [chartLoading, setChartLoading] = useState(false);
   const { isWatched, toggle: toggleWatch } = useWatchlist(stock.region);
   const toast = useToast();
 
@@ -94,12 +89,29 @@ export default function StockView({ stock }: { stock: StockViewData }) {
   const watching = isWatched(stock.ticker);
   const signal = signalStyles[stock.signal];
 
-  const chartData = useMemo(() => {
-    const points = rangePointCounts[range];
-    const totalChange = (stock.changePercent / 100) * rangeChangeMultipliers[range];
-    const startPrice = stock.price / (1 + totalChange);
-    return generateChartData(startPrice, stock.price, points, 0.012);
-  }, [range, stock.price, stock.changePercent]);
+  // Fetch real chart data from Yahoo when range changes
+  useEffect(() => {
+    if (range === stock.initialChartRange) return;
+    let cancelled = false;
+    setChartLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/stocks/history?ticker=${encodeURIComponent(stock.ticker)}&range=${rangeApiMap[range]}`
+        );
+        if (!res.ok) throw new Error("history fetch failed");
+        const json = (await res.json()) as { data: number[] };
+        if (!cancelled && json.data.length) setChartData(json.data);
+      } catch {
+        // silent - keep last data
+      } finally {
+        if (!cancelled) setChartLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [range, stock.ticker, stock.initialChartRange]);
 
   const formatPrice = (p: number) =>
     stock.currency === "₹"
@@ -188,12 +200,20 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           transition={{ delay: 0.1 }}
           className="bg-surface rounded-3xl p-5 border border-border"
         >
-          <StockChart
-            data={chartData}
-            isPositive={isPositive}
-            height={200}
-            currency={stock.currency}
-          />
+          <div className={chartLoading ? "opacity-50 transition-opacity" : "transition-opacity"}>
+            {chartData.length > 0 ? (
+              <StockChart
+                data={chartData}
+                isPositive={isPositive}
+                height={200}
+                currency={stock.currency}
+              />
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-xs text-text-tertiary">
+                No chart data available
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5 mt-4 bg-surface-secondary rounded-full p-1">
             {ranges.map((r) => (

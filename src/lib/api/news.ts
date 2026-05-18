@@ -95,15 +95,32 @@ function pickCategory(cats?: string[]): {
   };
 }
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&q=80";
+// Tasteful fallback images keyed by category, so articles without
+// images don't look broken or all the same.
+const FALLBACK_BY_CATEGORY: Record<string, string> = {
+  business: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=80",
+  technology: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80",
+  science: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=1200&q=80",
+  health: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=1200&q=80",
+  politics: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&q=80",
+  sports: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1200&q=80",
+  entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&q=80",
+  world: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80",
+  environment: "https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=1200&q=80",
+  top: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&q=80",
+  other: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&q=80",
+};
+
+function pickFallback(catKey?: string): string {
+  return FALLBACK_BY_CATEGORY[catKey ?? "other"] ?? FALLBACK_BY_CATEGORY.other;
+}
 
 function normalize(a: NewsDataArticle): NormalizedArticle {
   const cat = pickCategory(a.category);
   const body =
     a.content && a.content.length > 200
       ? a.content
-      : `${a.description ?? ""}\n\nRead more at ${a.source_name ?? a.source_id}.`;
+      : a.description ?? "";
   return {
     id: a.article_id,
     title: a.title,
@@ -112,7 +129,7 @@ function normalize(a: NewsDataArticle): NormalizedArticle {
     source: a.source_name ?? a.source_id,
     pubDate: a.pubDate,
     timeAgo: relativeTime(a.pubDate),
-    image: a.image_url || FALLBACK_IMAGE,
+    image: a.image_url || pickFallback(cat.key),
     link: a.link,
     aiSummary: a.description ?? "",
     body,
@@ -197,9 +214,12 @@ export async function fetchArticleById(
   id: string
 ): Promise<NormalizedArticle | null> {
   if (articleCache.has(id)) return articleCache.get(id) ?? null;
-  await fetchLatestNews({ size: 50 });
-  await fetchLatestNews({ country: "in", size: 30 });
-  await fetchLatestNews({ country: "us", size: 30 });
+  // Cast a wide net before giving up
+  await Promise.all([
+    fetchLatestNews({ size: 50 }),
+    fetchLatestNews({ country: "in", size: 50 }),
+    fetchLatestNews({ country: "us", size: 50 }),
+  ]);
   return articleCache.get(id) ?? null;
 }
 

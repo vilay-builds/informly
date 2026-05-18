@@ -3,6 +3,7 @@ import {
   resolveQuote,
   fetchBusinessSummary,
   fetchStockNews,
+  fetchPriceHistory,
   formatCompact,
 } from "@/lib/api/stocks";
 import { explainStock } from "@/lib/api/gemini";
@@ -23,9 +24,10 @@ export default async function StockPage({
 
   const { quote, region } = resolved;
 
-  const [businessSummary, news] = await Promise.all([
+  const [businessSummary, news, history] = await Promise.all([
     fetchBusinessSummary(quote.ticker, region),
     fetchStockNews(quote.ticker, region),
+    fetchPriceHistory(quote.ticker, region, "1mo"),
   ]);
 
   const commentary = await explainStock({
@@ -112,6 +114,8 @@ export default async function StockPage({
     about: commentary.about,
     analystSummary: commentary.analystSummary,
     news,
+    initialChartData: history.map((p) => p.close),
+    initialChartRange: "1M",
   };
 
   return <StockView stock={viewData} />;
