@@ -3,12 +3,24 @@
 import { useRef, useState } from "react";
 import { motion, PanInfo } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getFeaturedArticles } from "@/lib/content/articles";
 import { easing } from "@/lib/motion";
 
-export function FeaturedCarousel() {
+interface FeaturedStory {
+  id: string;
+  title: string;
+  category: string;
+  source: string;
+  timeAgo: string;
+  image: string;
+  aiSummary: string;
+}
+
+interface FeaturedCarouselProps {
+  stories: FeaturedStory[];
+}
+
+export function FeaturedCarousel({ stories }: FeaturedCarouselProps) {
   const router = useRouter();
-  const stories = getFeaturedArticles();
   const [index, setIndex] = useState(0);
   const wasDragging = useRef(false);
 
@@ -26,11 +38,12 @@ export function FeaturedCarousel() {
     } else if (info.offset.x > threshold && index > 0) {
       setIndex(index - 1);
     }
-    // Reset flag on next tick so the upcoming click is suppressed
     setTimeout(() => {
       wasDragging.current = false;
     }, 100);
   };
+
+  if (stories.length === 0) return null;
 
   return (
     <section className="pb-6">
@@ -77,7 +90,7 @@ export function FeaturedCarousel() {
               onClick={() => {
                 if (!isActive) return;
                 if (wasDragging.current) return;
-                router.push(`/article/${story.id}`);
+                router.push(`/article/${encodeURIComponent(story.id)}`);
               }}
               className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer select-none shadow-xl"
             >
@@ -100,9 +113,11 @@ export function FeaturedCarousel() {
                   <h2 className="text-lg font-bold leading-tight text-white mb-2">
                     {story.title}
                   </h2>
-                  <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
-                    {story.aiSummary}
-                  </p>
+                  {story.aiSummary && (
+                    <p className="text-sm text-white/80 leading-relaxed line-clamp-2 mb-3">
+                      {story.aiSummary}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-white/60">
                       {story.source}
