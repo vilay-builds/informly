@@ -4,7 +4,12 @@
 import "server-only";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const MODEL_NAME = "gemini-2.5-flash";
+// Free tier limits per day on the project:
+// - gemini-2.5-flash:       20 RPD   (too restrictive for real usage)
+// - gemini-2.5-flash-lite:  1,000 RPD (50x more headroom, still high quality)
+// - gemini-flash-lite-latest: same as lite, just the moving alias
+const MODEL_NAME = "gemini-2.5-flash-lite";
+const FALLBACK_MODEL = "gemini-flash-lite-latest";
 
 let _client: GoogleGenerativeAI | null = null;
 function client(): GoogleGenerativeAI | null {
@@ -78,6 +83,38 @@ function stripJsonFences(text: string): string {
   return trimmed;
 }
 
+async function generateWithFallback(
+  c: GoogleGenerativeAI,
+  args: {
+    systemInstruction?: string;
+    prompt: string;
+    temperature?: number;
+    maxOutputTokens?: number;
+  }
+): Promise<string> {
+  const models = [MODEL_NAME, FALLBACK_MODEL];
+  let lastErr: unknown = null;
+  for (const modelName of models) {
+    try {
+      const model = c.getGenerativeModel({
+        model: modelName,
+        systemInstruction: args.systemInstruction,
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: args.temperature ?? 0.7,
+          maxOutputTokens: args.maxOutputTokens ?? 2048,
+        },
+      });
+      const result = await model.generateContent(args.prompt);
+      return stripJsonFences(result.response.text());
+    } catch (err) {
+      lastErr = err;
+      console.warn(`Gemini model ${modelName} failed, trying next`, (err as Error).message);
+    }
+  }
+  throw lastErr ?? new Error("All Gemini models failed");
+}
+
 function fallbackPayload(article: { title: string; aiSummary: string; body?: string }): ExplainedPayload {
   const m = article.aiSummary || article.title;
   const stubLevel = (style: string): ExplainedLevel => ({
@@ -122,18 +159,12 @@ ${article.body.slice(0, 6000)}
 SOURCE: ${article.source}`;
 
   try {
-    const model = c.getGenerativeModel({
-      model: MODEL_NAME,
+    const text = await generateWithFallback(c, {
       systemInstruction: SYSTEM_PROMPT,
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-      },
+      prompt: userPrompt,
+      temperature: 0.7,
+      maxOutputTokens: 4096,
     });
-
-    const result = await model.generateContent(userPrompt);
-    const text = stripJsonFences(result.response.text());
     const parsed = JSON.parse(text) as ExplainedPayload;
 
     // Validate shape
@@ -228,16 +259,11 @@ Return ONLY valid JSON, no markdown, in this shape:
 Never use emojis. Never embellish facts. If a metric is missing, write "Data not available" for that key.`;
 
   try {
-    const model = c.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.6,
-        maxOutputTokens: 1500,
-      },
+    const text = await generateWithFallback(c, {
+      prompt,
+      temperature: 0.6,
+      maxOutputTokens: 1500,
     });
-    const result = await model.generateContent(prompt);
-    const text = stripJsonFences(result.response.text());
     const parsed = JSON.parse(text) as StockCommentary;
     if (!parsed.about || !parsed.signal) throw new Error("Invalid stock JSON");
 
@@ -289,15 +315,6 @@ export async function explainMarketState(
     .join(", ");
 
   try {
-    const model = c.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.6,
-        maxOutputTokens: 256,
-      },
-    });
-
     const prompt = `You are Nova's calm market interpreter.
 
 Given today's ${region === "india" ? "Indian" : "US"} index movements: ${indexList}
@@ -306,8 +323,11 @@ Write a calm one-sentence headline and a 2-sentence plain-language explanation. 
 
 Return JSON: {"title": "...", "explanation": "..."}`;
 
-    const result = await model.generateContent(prompt);
-    const text = stripJsonFences(result.response.text());
+    const text = await generateWithFallback(c, {
+      prompt,
+      temperature: 0.6,
+      maxOutputTokens: 256,
+    });
     const parsed = JSON.parse(text) as MarketSummary;
 
     MARKET_SUMMARY_CACHE.set(region, {
