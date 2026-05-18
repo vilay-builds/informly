@@ -114,7 +114,10 @@ export default async function StockPage({
     about: commentary.about,
     analystSummary: commentary.analystSummary,
     news,
-    initialChartData: history.map((p) => p.close),
+    initialChartPoints: history.map((p) => ({
+      value: p.close,
+      time: Math.floor(new Date(p.date).getTime() / 1000),
+    })),
     initialChartRange: "1M",
   };
 

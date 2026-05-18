@@ -34,7 +34,6 @@ export function CommandPalette() {
     };
     return [
       { id: "nav-feed", group: "Navigate", title: "Go to Feed", action: navigate("/") },
-      { id: "nav-brief", group: "Navigate", title: "Open Daily Brief", action: navigate("/brief") },
       { id: "nav-discover", group: "Navigate", title: "Open Discover", action: navigate("/discover") },
       { id: "nav-markets", group: "Navigate", title: "Open Markets", action: navigate("/markets") },
       { id: "nav-history", group: "Navigate", title: "Reading History", action: navigate("/history") },

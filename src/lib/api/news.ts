@@ -187,7 +187,16 @@ export async function fetchLatestNews(
     if (data.status !== "success" || !data.results) return [];
 
     const normalized = data.results
-      .filter((a) => a.title && a.article_id)
+      .filter(
+        (a) =>
+          a.title &&
+          a.article_id &&
+          // Hard English-only filter: NewsData sometimes returns non-English
+          // even when language=en is set.
+          (!a.language || a.language === "english" || a.language === "en") &&
+          // Trim out obviously non-Latin titles (devanagari, cyrillic etc.)
+          /^[\x00-\x7FÀ-ſ\s\d\p{P}\p{S}]+$/u.test(a.title)
+      )
       .map(normalize);
 
     // Populate cache

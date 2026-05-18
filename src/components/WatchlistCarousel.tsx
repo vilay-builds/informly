@@ -22,7 +22,7 @@ const signalLabel = {
 export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
-  const wasDragging = useRef(false);
+  const dragDistance = useRef(0);
 
   // Pre-compute sparkline data once for each stock
   const chartData = useMemo(
@@ -35,14 +35,11 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
     [stocks]
   );
 
-  const handleDragStart = () => {
-    wasDragging.current = true;
-  };
-
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
+    dragDistance.current = Math.abs(info.offset.x);
     const threshold = 60;
     if (info.offset.x < -threshold && index < stocks.length - 1) {
       setIndex(index + 1);
@@ -50,8 +47,8 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
       setIndex(index - 1);
     }
     setTimeout(() => {
-      wasDragging.current = false;
-    }, 100);
+      dragDistance.current = 0;
+    }, 50);
   };
 
   const formatPrice = (p: number, currency: "$" | "₹") =>
@@ -104,7 +101,6 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                 drag={isActive ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.55}
-                onDragStart={isActive ? handleDragStart : undefined}
                 onDragEnd={isActive ? handleDragEnd : undefined}
                 initial={false}
                 animate={{
@@ -119,7 +115,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                 whileDrag={{ rotate: 0, scale: 1.02 }}
                 onClick={() => {
                   if (!isActive) return;
-                  if (wasDragging.current) return;
+                  if (dragDistance.current > 8) return;
                   router.push(`/stock/${stock.ticker}`);
                 }}
                 className="absolute inset-0 cursor-pointer"

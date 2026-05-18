@@ -37,27 +37,24 @@ export default function DiscoverView({ cards }: DiscoverViewProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const constraintsRef = useRef(null);
-  const wasDragging = useRef(false);
+  const dragDistance = useRef(0);
 
   const paginate = (delta: number) => {
     const next = Math.max(0, Math.min(cards.length - 1, index + delta));
     setIndex(next);
   };
 
-  const handleDragStart = () => {
-    wasDragging.current = true;
-  };
-
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
+    dragDistance.current = Math.abs(info.offset.x);
     const threshold = 60;
     if (info.offset.x < -threshold) paginate(1);
     else if (info.offset.x > threshold) paginate(-1);
     setTimeout(() => {
-      wasDragging.current = false;
-    }, 100);
+      dragDistance.current = 0;
+    }, 50);
   };
 
   if (cards.length === 0) {
@@ -110,7 +107,6 @@ export default function DiscoverView({ cards }: DiscoverViewProps) {
                 drag={isActive ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.55}
-                onDragStart={isActive ? handleDragStart : undefined}
                 onDragEnd={isActive ? handleDragEnd : undefined}
                 initial={false}
                 animate={{
@@ -125,7 +121,7 @@ export default function DiscoverView({ cards }: DiscoverViewProps) {
                 whileDrag={{ rotate: 0, scale: 1.02 }}
                 onClick={() => {
                   if (!isActive) return;
-                  if (wasDragging.current) return;
+                  if (dragDistance.current > 8) return;
                   router.push(`/article/${encodeURIComponent(card.id)}`);
                 }}
                 className="absolute w-[88%] max-w-md h-[72%] rounded-3xl overflow-hidden cursor-pointer select-none"

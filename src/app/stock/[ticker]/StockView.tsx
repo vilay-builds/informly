@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { StockChart } from "@/components/StockChart";
+import { PremiumChart, ChartPoint } from "@/components/PremiumChart";
 import { Pill } from "@/components/ui";
 import { useWatchlist } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
@@ -73,15 +73,44 @@ export interface StockViewData {
   about: string;
   analystSummary: string;
   news: { title: string; link: string; publisher: string; publishedAt: string }[];
-  initialChartData: number[];
+  initialChartPoints: ChartPoint[];
   initialChartRange: Range;
+}
+
+function formatPriceFull(p: number, currency: "$" | "₹"): string {
+  return p.toLocaleString(currency === "₹" ? "en-IN" : "en-US", {
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatChartTime(time: number, range: Range): string {
+  const d = new Date(time * 1000);
+  if (range === "1D" || range === "1W") {
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+  if (range === "1M" || range === "3M") {
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export default function StockView({ stock }: { stock: StockViewData }) {
   const [expandedMetric, setExpandedMetric] = useState<number | null>(null);
   const [range, setRange] = useState<Range>(stock.initialChartRange);
-  const [chartData, setChartData] = useState<number[]>(stock.initialChartData);
+  const [points, setPoints] = useState<ChartPoint[]>(stock.initialChartPoints);
   const [chartLoading, setChartLoading] = useState(false);
+  const [hover, setHover] = useState<{ value: number; time: number } | null>(null);
   const { isWatched, toggle: toggleWatch } = useWatchlist(stock.region);
   const toast = useToast();
 
@@ -89,9 +118,25 @@ export default function StockView({ stock }: { stock: StockViewData }) {
   const watching = isWatched(stock.ticker);
   const signal = signalStyles[stock.signal];
 
-  // Fetch real chart data from Yahoo when range changes
+  // Range-derived label
+  const rangeLabel = useMemo(
+    () => ({
+      "1D": "today",
+      "1W": "this week",
+      "1M": "this month",
+      "3M": "past 3 months",
+      "1Y": "past year",
+      "5Y": "past 5 years",
+    })[range],
+    [range]
+  );
+
+  // Fetch real chart data on range change
   useEffect(() => {
-    if (range === stock.initialChartRange) return;
+    if (range === stock.initialChartRange) {
+      setPoints(stock.initialChartPoints);
+      return;
+    }
     let cancelled = false;
     setChartLoading(true);
     (async () => {
@@ -100,10 +145,18 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           `/api/stocks/history?ticker=${encodeURIComponent(stock.ticker)}&range=${rangeApiMap[range]}`
         );
         if (!res.ok) throw new Error("history fetch failed");
-        const json = (await res.json()) as { data: number[] };
-        if (!cancelled && json.data.length) setChartData(json.data);
+        const json = (await res.json()) as {
+          data: number[];
+          timestamps: string[];
+        };
+        if (cancelled) return;
+        const next: ChartPoint[] = json.data.map((value, i) => ({
+          value,
+          time: Math.floor(new Date(json.timestamps[i]).getTime() / 1000),
+        }));
+        setPoints(next);
       } catch {
-        // silent - keep last data
+        // silent — keep last
       } finally {
         if (!cancelled) setChartLoading(false);
       }
@@ -111,12 +164,24 @@ export default function StockView({ stock }: { stock: StockViewData }) {
     return () => {
       cancelled = true;
     };
-  }, [range, stock.ticker, stock.initialChartRange]);
+  }, [range, stock.ticker, stock.initialChartRange, stock.initialChartPoints]);
 
-  const formatPrice = (p: number) =>
-    stock.currency === "₹"
-      ? p.toLocaleString("en-IN", { maximumFractionDigits: 2 })
-      : p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  // Range stats (high/low/change over the displayed range)
+  const rangeStats = useMemo(() => {
+    if (points.length === 0) return null;
+    const first = points[0].value;
+    const last = points[points.length - 1].value;
+    const high = Math.max(...points.map((p) => p.value));
+    const low = Math.min(...points.map((p) => p.value));
+    const chgPct = ((last - first) / first) * 100;
+    return { first, last, high, low, chgPct };
+  }, [points]);
+
+  const displayPrice = hover ? hover.value : stock.price;
+  const displayChangePct = hover && rangeStats
+    ? ((hover.value - rangeStats.first) / rangeStats.first) * 100
+    : (rangeStats ? rangeStats.chgPct : stock.changePercent);
+  const displayPositive = displayChangePct >= 0;
 
   const handleToggleWatch = () => {
     toggleWatch(stock.ticker);
@@ -167,85 +232,131 @@ export default function StockView({ stock }: { stock: StockViewData }) {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-5 pt-6 space-y-6">
+      <main className="max-w-2xl mx-auto px-5 pt-8 space-y-8">
+        {/* Title + price */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-xs text-text-tertiary mb-1">
-            Last traded price · {stock.exchange}
+          <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
+            {stock.exchange}
           </p>
-          <p className="text-4xl font-bold text-text-primary tracking-tight">
-            <span className="text-2xl text-text-tertiary mr-1">
-              {stock.currency}
-            </span>
-            {formatPrice(stock.price)}
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-sm font-medium text-text-secondary">
-              {stock.name}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-text-tertiary" />
+          <p className="text-sm text-text-secondary mb-1.5">{stock.name}</p>
+
+          <div className="flex items-baseline gap-3 mb-1">
+            <p className="text-[2.5rem] font-bold text-text-primary tracking-tight tabular-nums leading-none">
+              <span className="text-xl text-text-tertiary mr-1.5">
+                {stock.currency}
+              </span>
+              {formatPriceFull(displayPrice, stock.currency)}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5 text-sm">
             <span
-              className={`text-sm font-semibold ${
-                isPositive ? "text-success-500" : "text-red-500"
+              className={`font-semibold tabular-nums ${
+                displayPositive ? "text-success-500" : "text-red-500"
               }`}
             >
-              {isPositive ? "+" : ""}
-              {stock.changePercent.toFixed(2)}% ({range})
+              {displayPositive ? "+" : ""}
+              {displayChangePct.toFixed(2)}%
+            </span>
+            <span className="text-text-tertiary">
+              {hover
+                ? formatChartTime(hover.time, range)
+                : `${rangeLabel}`}
             </span>
           </div>
         </motion.div>
 
+        {/* Chart */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-surface rounded-3xl p-5 border border-border"
+          transition={{ delay: 0.05 }}
         >
-          <div className={chartLoading ? "opacity-50 transition-opacity" : "transition-opacity"}>
-            {chartData.length > 0 ? (
-              <StockChart
-                data={chartData}
-                isPositive={isPositive}
-                height={200}
+          <div
+            className={`relative transition-opacity duration-200 ${
+              chartLoading ? "opacity-40" : "opacity-100"
+            }`}
+          >
+            {points.length > 0 ? (
+              <PremiumChart
+                data={points}
+                isPositive={(rangeStats?.chgPct ?? stock.changePercent) >= 0}
                 currency={stock.currency}
+                height={260}
+                onCrosshairMove={setHover}
               />
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-xs text-text-tertiary">
+              <div className="h-[260px] flex items-center justify-center text-xs text-text-tertiary">
                 No chart data available
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 mt-4 bg-surface-secondary rounded-full p-1">
+          {/* Range pills */}
+          <div className="flex items-center justify-center gap-1 mt-4">
             {ranges.map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                className={`relative px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${
                   range === r
-                    ? "bg-primary-500 text-white shadow-sm"
+                    ? "text-white"
                     : "text-text-tertiary hover:text-text-secondary"
                 }`}
               >
-                {r}
+                {range === r && (
+                  <motion.div
+                    layoutId="range-pill"
+                    className="absolute inset-0 rounded-full bg-text-primary"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative">{r}</span>
               </button>
             ))}
           </div>
         </motion.div>
 
+        {/* Range summary chips */}
+        {rangeStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-3 gap-3"
+          >
+            <RangeStat
+              label="Range High"
+              value={formatPriceFull(rangeStats.high, stock.currency)}
+              currency={stock.currency}
+            />
+            <RangeStat
+              label="Range Low"
+              value={formatPriceFull(rangeStats.low, stock.currency)}
+              currency={stock.currency}
+            />
+            <RangeStat
+              label="Range Change"
+              value={`${rangeStats.chgPct >= 0 ? "+" : ""}${rangeStats.chgPct.toFixed(2)}%`}
+              tone={rangeStats.chgPct >= 0 ? "up" : "down"}
+            />
+          </motion.div>
+        )}
+
+        {/* Market stats */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-surface rounded-2xl p-4 border border-border"
+          className="bg-surface rounded-2xl p-5 border border-border"
         >
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">
             Market Stats
           </h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3.5">
             {stock.stats.map((stat) => (
               <div key={stat.label} className="flex items-center justify-between">
                 <span className="text-xs text-text-tertiary">{stat.label}</span>
-                <span className="text-xs font-semibold text-text-primary">
+                <span className="text-xs font-semibold text-text-primary tabular-nums">
                   {stat.value}
                 </span>
               </div>
@@ -253,6 +364,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </div>
         </motion.section>
 
+        {/* Signal */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -261,15 +373,14 @@ export default function StockView({ stock }: { stock: StockViewData }) {
         >
           <div className="flex items-center gap-2 mb-2">
             <span className={signal.color}>{signal.icon}</span>
-            <h3 className={`text-sm font-bold ${signal.color}`}>
-              {signal.label}
-            </h3>
+            <h3 className={`text-sm font-bold ${signal.color}`}>{signal.label}</h3>
           </div>
           <p className="text-sm text-text-secondary leading-relaxed">
             {stock.signalReason}
           </p>
         </motion.section>
 
+        {/* About */}
         <section className="bg-surface rounded-2xl p-5 border border-border">
           <h3 className="text-sm font-semibold text-text-primary mb-2">
             What does {stock.name} do?
@@ -279,6 +390,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </p>
         </section>
 
+        {/* Metrics */}
         {stock.metrics.length > 0 && (
           <section>
             <h3 className="text-sm font-semibold text-text-primary mb-3">
@@ -292,16 +404,12 @@ export default function StockView({ stock }: { stock: StockViewData }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 + i * 0.04 }}
                   className="bg-surface rounded-xl border border-border overflow-hidden cursor-pointer"
-                  onClick={() =>
-                    setExpandedMetric(expandedMetric === i ? null : i)
-                  }
+                  onClick={() => setExpandedMetric(expandedMetric === i ? null : i)}
                 >
                   <div className="flex items-center justify-between p-4">
-                    <span className="text-sm text-text-secondary">
-                      {metric.label}
-                    </span>
+                    <span className="text-sm text-text-secondary">{metric.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-text-primary">
+                      <span className="text-sm font-bold text-text-primary tabular-nums">
                         {metric.value}
                       </span>
                       <motion.svg
@@ -318,28 +426,31 @@ export default function StockView({ stock }: { stock: StockViewData }) {
                       </motion.svg>
                     </div>
                   </div>
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      height: expandedMetric === i ? "auto" : 0,
-                      opacity: expandedMetric === i ? 1 : 0,
-                    }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-4 pb-4">
-                      <div className="pt-3 border-t border-border">
-                        <p className="text-xs text-text-secondary leading-relaxed">
-                          {metric.explanation}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <AnimatePresence initial={false}>
+                    {expandedMetric === i && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4">
+                          <div className="pt-3 border-t border-border">
+                            <p className="text-xs text-text-secondary leading-relaxed">
+                              {metric.explanation}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ))}
             </div>
           </section>
         )}
 
+        {/* Analyst */}
         <section className="bg-primary-50 rounded-2xl p-5 border border-primary-100">
           <h3 className="text-sm font-semibold text-primary-700 mb-2">
             What Analysts Are Saying
@@ -349,6 +460,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </p>
         </section>
 
+        {/* News */}
         {stock.news.length > 0 && (
           <section className="pb-6">
             <h3 className="text-sm font-semibold text-text-primary mb-3">
@@ -367,15 +479,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
                     <p className="text-sm text-text-primary leading-snug flex-1">
                       {item.title}
                     </p>
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-text-tertiary flex-shrink-0"
-                    >
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary flex-shrink-0">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </div>
@@ -388,6 +492,36 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </section>
         )}
       </main>
+    </div>
+  );
+}
+
+function RangeStat({
+  label,
+  value,
+  tone,
+  currency,
+}: {
+  label: string;
+  value: string;
+  tone?: "up" | "down";
+  currency?: "$" | "₹";
+}) {
+  return (
+    <div className="bg-surface rounded-xl p-3.5 border border-border">
+      <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1.5">
+        {label}
+      </p>
+      <p
+        className={`text-sm font-bold tabular-nums ${
+          tone === "up" ? "text-success-500" : tone === "down" ? "text-red-500" : "text-text-primary"
+        }`}
+      >
+        {currency && tone === undefined && (
+          <span className="text-text-tertiary mr-0.5">{currency}</span>
+        )}
+        {value}
+      </p>
     </div>
   );
 }

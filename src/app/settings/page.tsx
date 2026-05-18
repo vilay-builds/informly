@@ -68,7 +68,6 @@ const NOTIFICATION_OPTIONS: {
   label: string;
   desc: string;
 }[] = [
-  { key: "dailyBrief", label: "Daily brief", desc: "Morning summary of top stories" },
   { key: "marketAlerts", label: "Market alerts", desc: "When your stocks move significantly" },
   { key: "breakingNews", label: "Breaking news", desc: "Major world events only" },
   { key: "weeklyDigest", label: "Weekly digest", desc: "What you missed this week" },
@@ -170,7 +169,6 @@ export default function SettingsPage() {
           </h3>
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
             {[
-              { href: "/brief", label: "Daily Brief", desc: "Today's curated stories" },
               { href: "/history", label: "Reading History", desc: "Everything you've read" },
             ].map((link, i) => (
               <Link

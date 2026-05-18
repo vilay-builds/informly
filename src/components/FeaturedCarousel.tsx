@@ -22,25 +22,23 @@ interface FeaturedCarouselProps {
 export function FeaturedCarousel({ stories }: FeaturedCarouselProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
-  const wasDragging = useRef(false);
-
-  const handleDragStart = () => {
-    wasDragging.current = true;
-  };
+  const dragDistance = useRef(0);
 
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
+    dragDistance.current = Math.abs(info.offset.x);
     const threshold = 60;
     if (info.offset.x < -threshold && index < stories.length - 1) {
       setIndex(index + 1);
     } else if (info.offset.x > threshold && index > 0) {
       setIndex(index - 1);
     }
+    // Reset distance after click handler runs
     setTimeout(() => {
-      wasDragging.current = false;
-    }, 100);
+      dragDistance.current = 0;
+    }, 50);
   };
 
   if (stories.length === 0) return null;
@@ -74,7 +72,6 @@ export function FeaturedCarousel({ stories }: FeaturedCarouselProps) {
               drag={isActive ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.6}
-              onDragStart={isActive ? handleDragStart : undefined}
               onDragEnd={isActive ? handleDragEnd : undefined}
               initial={false}
               animate={{
@@ -89,7 +86,7 @@ export function FeaturedCarousel({ stories }: FeaturedCarouselProps) {
               whileDrag={{ rotate: 0, scale: 1.02 }}
               onClick={() => {
                 if (!isActive) return;
-                if (wasDragging.current) return;
+                if (dragDistance.current > 8) return;
                 router.push(`/article/${encodeURIComponent(story.id)}`);
               }}
               className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer select-none shadow-xl"
