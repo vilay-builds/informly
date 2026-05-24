@@ -212,9 +212,12 @@ export async function fetchPriceHistory(
     "5y": "1wk",
   };
 
+  // We pull a slightly wider window than the user asked for so that
+  // weekends/holidays still produce a curve from the most recent
+  // trading session.
   const periodMap: Record<typeof range, () => Date> = {
-    "1d": () => new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    "5d": () => new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    "1d": () => new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    "5d": () => new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     "1mo": () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     "3mo": () => new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
     "6mo": () => new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
@@ -229,12 +232,28 @@ export async function fetchPriceHistory(
       interval: intervalMap[range],
     })) as unknown as { quotes?: Array<{ date: Date | string; close: number | null }> };
     if (!result.quotes) return [];
-    return result.quotes
+
+    const all = result.quotes
       .filter((q) => q.close != null)
       .map((q) => ({
         date: q.date instanceof Date ? q.date.toISOString() : String(q.date),
         close: q.close as number,
       }));
+
+    // For 1D, slice to JUST the most-recent trading day's points.
+    // We bucket by IST day boundary (NSE local time).
+    if (range === "1d" && all.length > 0) {
+      const istDayKey = (iso: string) => {
+        // Convert UTC ISO to IST (UTC+5:30) day key
+        const utc = new Date(iso);
+        const ist = new Date(utc.getTime() + 5.5 * 60 * 60 * 1000);
+        return `${ist.getUTCFullYear()}-${ist.getUTCMonth()}-${ist.getUTCDate()}`;
+      };
+      const lastDay = istDayKey(all[all.length - 1].date);
+      return all.filter((p) => istDayKey(p.date) === lastDay);
+    }
+
+    return all;
   } catch (err) {
     console.error(`Yahoo chart failed for ${symbol}`, err);
     return [];

@@ -11,14 +11,14 @@ export default function NotFound() {
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-2">
-          Lost in the news
+          We couldn&apos;t find that page
         </h1>
         <p className="text-sm text-text-secondary leading-relaxed mb-6">
-          We couldn&apos;t find what you were looking for. Let&apos;s get you
-          back to today&apos;s stories.
+          The page may have moved, or the link might be broken. Let&apos;s
+          get you back to your markets.
         </p>
         <Link href="/">
-          <Button variant="primary">Back to your feed</Button>
+          <Button variant="primary">Back to your watchlist</Button>
         </Link>
       </div>
     </div>

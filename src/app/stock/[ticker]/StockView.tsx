@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { PremiumChart, ChartPoint } from "@/components/PremiumChart";
 import { Pill } from "@/components/ui";
 import { useWatchlist } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ViewTransition = (React as any).ViewTransition as React.ComponentType<{
+  name?: string;
+  children: React.ReactNode;
+}>;
 
 const ranges = ["1D", "1W", "1M", "3M", "1Y", "5Y"] as const;
 type Range = (typeof ranges)[number];
@@ -210,16 +217,30 @@ export default function StockView({ stock }: { stock: StockViewData }) {
     };
   }, [range, stock.ticker, stock.initialChartRange, stock.initialChartPoints]);
 
+  // Stitch the live current price as the trailing point so the chart's
+  // last value matches the displayed price exactly (history closes lag
+  // by minutes during market hours).
+  const stitchedPoints = useMemo(() => {
+    if (points.length === 0) return points;
+    const last = points[points.length - 1];
+    // Only stitch if the live price differs meaningfully from the last close
+    if (Math.abs(last.value - stock.price) < 0.005) return points;
+    const nowSec = Math.floor(Date.now() / 1000);
+    // Ensure the new timestamp is after the previous one
+    const ts = Math.max(last.time + 60, nowSec);
+    return [...points, { value: stock.price, time: ts }];
+  }, [points, stock.price]);
+
   // Range stats (high/low/change over the displayed range)
   const rangeStats = useMemo(() => {
-    if (points.length === 0) return null;
-    const first = points[0].value;
-    const last = points[points.length - 1].value;
-    const high = Math.max(...points.map((p) => p.value));
-    const low = Math.min(...points.map((p) => p.value));
+    if (stitchedPoints.length === 0) return null;
+    const first = stitchedPoints[0].value;
+    const last = stitchedPoints[stitchedPoints.length - 1].value;
+    const high = Math.max(...stitchedPoints.map((p) => p.value));
+    const low = Math.min(...stitchedPoints.map((p) => p.value));
     const chgPct = ((last - first) / first) * 100;
     return { first, last, high, low, chgPct };
-  }, [points]);
+  }, [stitchedPoints]);
 
   const displayPrice = hover ? hover.value : stock.price;
   const displayChangePct = hover && rangeStats
@@ -243,8 +264,8 @@ export default function StockView({ stock }: { stock: StockViewData }) {
         <div className="max-w-2xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/markets"
-              aria-label="Back to markets"
+              href="/"
+              aria-label="Back"
               className="w-9 h-9 rounded-full bg-surface flex items-center justify-center border border-border"
             >
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -277,7 +298,8 @@ export default function StockView({ stock }: { stock: StockViewData }) {
       </header>
 
       <main className="max-w-2xl mx-auto px-5 pt-8 space-y-8">
-        {/* Title + price */}
+        {/* Title + price — wrapped in ViewTransition to morph from the watchlist card */}
+        <ViewTransition name={`stock-card-${stock.ticker}`}>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
             {stock.exchange}
@@ -308,6 +330,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
             </span>
           </div>
         </motion.div>
+        </ViewTransition>
 
         {/* Chart */}
         <motion.div
@@ -320,9 +343,9 @@ export default function StockView({ stock }: { stock: StockViewData }) {
               chartLoading ? "opacity-40" : "opacity-100"
             }`}
           >
-            {points.length > 0 ? (
+            {stitchedPoints.length > 0 ? (
               <PremiumChart
-                data={points}
+                data={stitchedPoints}
                 isPositive={(rangeStats?.chgPct ?? stock.changePercent) >= 0}
                 currency={stock.currency}
                 height={260}

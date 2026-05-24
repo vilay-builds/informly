@@ -1,7 +1,17 @@
 "use client";
 
 import { useRef, useState, useMemo } from "react";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import * as React from "react";
 import { motion, PanInfo, AnimatePresence } from "framer-motion";
+
+// React 19.2 ships ViewTransition under the experimental flag in Next 16.
+// It's exported as `ViewTransition` from React but not yet in the typed API.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ViewTransition = (React as any).ViewTransition as React.ComponentType<{
+  name?: string;
+  children: React.ReactNode;
+}>;
 import { useRouter } from "next/navigation";
 import { Stock } from "@/lib/content/types";
 import { Sparkline } from "@/components/Sparkline";
@@ -14,21 +24,64 @@ interface WatchlistCarouselProps {
 }
 
 const signalLabel = {
-  bullish: "Bullish",
-  bearish: "Bearish",
-  neutral: "Neutral",
+  bullish: "Looking strong",
+  bearish: "Use caution",
+  neutral: "Steady",
 };
+
+// Friendly Indian numbering. Yahoo gives raw market cap in rupees.
+// Convert to "₹2.5 Lakh Crore" rather than "₹2.5L Cr".
+function friendlyMarketCap(value: string): string {
+  // Incoming examples: "₹19.8L Cr", "₹500 Cr", "₹500", "—"
+  if (!value || value === "—") return "Unknown";
+  const m = value.match(/^[₹$]([\d,.]+)\s*([A-Za-z]+)?\s*([A-Za-z]+)?$/);
+  if (!m) return value;
+  const num = parseFloat(m[1].replace(/,/g, ""));
+  const suffix = `${m[2] ?? ""} ${m[3] ?? ""}`.trim().toUpperCase();
+  if (suffix.includes("L CR") || suffix === "LCR") {
+    return `₹${num.toFixed(1)} Lakh Cr`;
+  }
+  if (suffix === "CR") {
+    if (num >= 100000) return `₹${(num / 100000).toFixed(1)} Lakh Cr`;
+    if (num >= 1000) return `₹${(num / 1000).toFixed(1)} Th Cr`;
+    return `₹${num.toFixed(0)} Cr`;
+  }
+  if (suffix === "T") return `₹${num.toFixed(1)} Trillion`;
+  if (suffix === "B") return `₹${num.toFixed(1)} Billion`;
+  if (suffix === "M") return `₹${num.toFixed(0)} Million`;
+  return value;
+}
+
+// Beginner-friendly "company size" tier from market cap value.
+function sizeTier(value: string): { label: string; tone: "lg" | "md" | "sm" } {
+  if (!value || value === "—" || value === "Unknown")
+    return { label: "Listed", tone: "sm" };
+  // Detect lakh crore for large caps
+  if (/lakh\s*cr/i.test(value)) {
+    const m = value.match(/([\d.]+)/);
+    const lkhCr = m ? parseFloat(m[1]) : 0;
+    if (lkhCr >= 5) return { label: "Mega cap", tone: "lg" };
+    if (lkhCr >= 1) return { label: "Large cap", tone: "lg" };
+  }
+  if (/cr/i.test(value)) {
+    const m = value.match(/([\d.]+)/);
+    const cr = m ? parseFloat(m[1]) : 0;
+    if (cr >= 20000) return { label: "Large cap", tone: "lg" };
+    if (cr >= 5000) return { label: "Mid cap", tone: "md" };
+    return { label: "Small cap", tone: "sm" };
+  }
+  return { label: "Listed", tone: "sm" };
+}
 
 export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const dragDistance = useRef(0);
 
-  // Pre-compute sparkline data once for each stock
   const chartData = useMemo(
     () =>
       stocks.map((s) => {
-        const totalChange = (s.change / 100) * 3.2; // ~1 month drift
+        const totalChange = (s.change / 100) * 3.2;
         const startPrice = s.price / (1 + totalChange);
         return generateChartData(startPrice, s.price, 30, 0.012);
       }),
@@ -51,10 +104,8 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
     }, 50);
   };
 
-  const formatPrice = (p: number, currency: "$" | "₹") =>
-    currency === "₹"
-      ? p.toLocaleString("en-IN", { maximumFractionDigits: 2 })
-      : p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const formatPrice = (p: number) =>
+    p.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
   if (stocks.length === 0) return null;
 
@@ -81,10 +132,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
         </div>
       </div>
 
-      <div
-        className="relative h-[320px]"
-        style={{ perspective: "1200px" }}
-      >
+      <div className="relative h-[340px]" style={{ perspective: "1200px" }}>
         <AnimatePresence initial={false}>
           {stocks.map((stock, i) => {
             const offset = i - index;
@@ -94,6 +142,12 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
 
             const isPositive = stock.change >= 0;
             const data = chartData[i];
+            const marketCapStat = stock.stats.find((s) => s.label === "Market Cap");
+            const friendlyCap = marketCapStat
+              ? friendlyMarketCap(marketCapStat.value)
+              : "—";
+            const tier = sizeTier(friendlyCap);
+            const dayRange = stock.stats.find((s) => s.label === "Day Range");
 
             return (
               <motion.div
@@ -120,15 +174,22 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                 }}
                 className="absolute inset-0 cursor-pointer"
               >
-                <div
-                  className="h-full rounded-3xl bg-surface border border-border overflow-hidden flex flex-col"
+                <ViewTransition
+                  name={isActive ? `stock-card-${stock.ticker}` : undefined}
+                >
+                  <div
+                    className={`h-full rounded-3xl overflow-hidden flex flex-col relative ${
+                      isPositive
+                        ? "bg-gradient-to-br from-surface to-success-400/5"
+                        : "bg-gradient-to-br from-surface to-red-50/40"
+                    } border border-border`}
                   style={{
                     boxShadow:
                       "0 24px 56px -16px rgba(0,0,0,0.18), 0 6px 16px -6px rgba(0,0,0,0.08)",
                   }}
                 >
                   {/* Header */}
-                  <div className="px-5 pt-5 pb-3 flex items-start justify-between">
+                  <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-base font-bold text-text-primary tracking-tight">
@@ -143,7 +204,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                       </p>
                     </div>
                     <span
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                      className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
                         stock.signal === "bullish"
                           ? "bg-success-400/15 text-success-500"
                           : stock.signal === "bearish"
@@ -155,74 +216,59 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                     </span>
                   </div>
 
-                  {/* Price */}
-                  <div className="px-5 pb-2 flex items-baseline justify-between">
+                  {/* Price + change */}
+                  <div className="px-5 pb-3 flex items-end justify-between">
                     <div>
-                      <p className="text-3xl font-bold text-text-primary tracking-tight tabular-nums">
-                        <span className="text-lg text-text-tertiary mr-0.5">
-                          {stock.currency}
+                      <p className="text-[32px] leading-none font-bold text-text-primary tracking-tight tabular-nums">
+                        <span className="text-base text-text-tertiary mr-1 align-baseline">
+                          ₹
                         </span>
-                        {formatPrice(stock.price, stock.currency)}
+                        {formatPrice(stock.price)}
                       </p>
-                    </div>
-                    <div
-                      className={`flex items-center gap-1 text-sm font-semibold tabular-nums ${
-                        isPositive ? "text-success-500" : "text-red-500"
-                      }`}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
+                      <p
+                        className={`text-sm font-semibold tabular-nums mt-1.5 ${
+                          isPositive ? "text-success-500" : "text-red-500"
+                        }`}
                       >
-                        {isPositive ? (
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                          />
-                        ) : (
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-                          />
-                        )}
-                      </svg>
-                      {isPositive ? "+" : ""}
-                      {stock.change}%
+                        {isPositive ? "▲" : "▼"} {Math.abs(stock.change)}% today
+                      </p>
                     </div>
                   </div>
 
-                  {/* Sparkline */}
-                  <div className="flex-1 px-2 pb-2 pt-1 relative">
-                    <Sparkline data={data} isPositive={isPositive} height={100} />
+                  {/* Sparkline — fills the middle */}
+                  <div className="flex-1 px-1 pb-1 relative min-h-[80px]">
+                    <Sparkline data={data} isPositive={isPositive} height={110} />
                     <span className="absolute right-5 top-2 text-[10px] text-text-tertiary font-medium">
-                      30 days
+                      Last 30 days
                     </span>
                   </div>
 
-                  {/* Stats grid */}
-                  <div className="px-5 py-3 border-t border-border grid grid-cols-3 gap-3">
-                    {stock.stats.slice(0, 3).map((stat) => (
-                      <div key={stat.label} className="min-w-0">
-                        <p className="text-[10px] text-text-tertiary truncate mb-0.5">
-                          {stat.label}
+                  {/* Beginner-friendly facts */}
+                  <div className="px-5 pt-3 pb-3 border-t border-border/60 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-text-tertiary mb-0.5">
+                        Company size
+                      </p>
+                      <p className="text-xs font-semibold text-text-primary truncate">
+                        {tier.label} · {friendlyCap}
+                      </p>
+                    </div>
+                    {dayRange && (
+                      <div className="text-right min-w-0">
+                        <p className="text-[10px] text-text-tertiary mb-0.5">
+                          Today&apos;s range
                         </p>
                         <p className="text-xs font-semibold text-text-primary tabular-nums truncate">
-                          {stat.value}
+                          ₹{dayRange.value}
                         </p>
                       </div>
-                    ))}
+                    )}
                   </div>
 
-                  {/* CTA hint */}
-                  <div className="px-5 py-3 bg-surface-secondary/60 flex items-center justify-between">
+                  {/* CTA */}
+                  <div className="px-5 py-3 bg-surface-secondary/50 flex items-center justify-between">
                     <span className="text-[11px] text-text-tertiary">
-                      Tap for full details
+                      Tap to open
                     </span>
                     <svg
                       width="14"
@@ -241,12 +287,12 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                     </svg>
                   </div>
                 </div>
+                </ViewTransition>
               </motion.div>
             );
           })}
         </AnimatePresence>
 
-        {/* Swipe hint — only on first card */}
         {index === 0 && stocks.length > 1 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -254,34 +300,12 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
             transition={{ delay: 0.6 }}
             className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[10px] text-text-tertiary pointer-events-none"
           >
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Swipe to browse your watchlist
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
           </motion.div>
         )}
