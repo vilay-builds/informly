@@ -72,10 +72,54 @@ export interface StockViewData {
   signalReason: string;
   about: string;
   analystSummary: string;
+  termFit: "short" | "mid" | "long" | "any";
+  termFitReason: string;
+  beginnerVerdict: "yes" | "maybe" | "wait" | "avoid";
+  beginnerVerdictReason: string;
+  whyBuying: string[];
+  whyAvoiding: string[];
   news: { title: string; link: string; publisher: string; publishedAt: string }[];
   initialChartPoints: ChartPoint[];
   initialChartRange: Range;
 }
+
+const TERM_FIT_META = {
+  short: {
+    label: "Short term",
+    range: "weeks to a few months",
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+  },
+  mid: {
+    label: "Mid term",
+    range: "6 months – 2 years",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+  },
+  long: {
+    label: "Long term",
+    range: "3 years or more",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+  },
+  any: {
+    label: "Any horizon",
+    range: "flexible",
+    color: "text-text-secondary",
+    bg: "bg-surface-secondary",
+    border: "border-border",
+  },
+};
+
+const BEGINNER_META = {
+  yes: { label: "Beginner-friendly", color: "text-success-500", bg: "bg-success-400/15", border: "border-success-400/30" },
+  maybe: { label: "Approach with care", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" },
+  wait: { label: "Wait & learn first", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
+  avoid: { label: "Not for beginners", color: "text-red-500", bg: "bg-red-50", border: "border-red-200" },
+};
 
 function formatPriceFull(p: number, currency: "$" | "₹"): string {
   return p.toLocaleString(currency === "₹" ? "en-IN" : "en-US", {
@@ -379,6 +423,116 @@ export default function StockView({ stock }: { stock: StockViewData }) {
             {stock.signalReason}
           </p>
         </motion.section>
+
+        {/* TERM FIT + BEGINNER VERDICT — side by side on desktop */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
+          {/* Term Fit */}
+          {(() => {
+            const m = TERM_FIT_META[stock.termFit];
+            return (
+              <div className={`rounded-2xl p-5 border ${m.bg} ${m.border}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-2">
+                  Best-fit horizon
+                </p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <h3 className={`text-base font-bold ${m.color}`}>
+                    {m.label}
+                  </h3>
+                  <span className="text-[11px] text-text-tertiary">
+                    ({m.range})
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {stock.termFitReason}
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Beginner Verdict */}
+          {(() => {
+            const m = BEGINNER_META[stock.beginnerVerdict];
+            return (
+              <div className={`rounded-2xl p-5 border ${m.bg} ${m.border}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-2">
+                  For a beginner?
+                </p>
+                <h3 className={`text-base font-bold ${m.color} mb-2`}>
+                  {m.label}
+                </h3>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {stock.beginnerVerdictReason}
+                </p>
+              </div>
+            );
+          })()}
+        </motion.div>
+
+        {/* WHY BUYING / WHY AVOIDING */}
+        {(stock.whyBuying.length > 0 || stock.whyAvoiding.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-3"
+          >
+            {stock.whyBuying.length > 0 && (
+              <div className="bg-surface rounded-2xl p-5 border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 rounded-full bg-success-400/20 flex items-center justify-center text-success-500">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-semibold text-text-primary">
+                    Why people are buying
+                  </h3>
+                </div>
+                <ul className="space-y-2">
+                  {stock.whyBuying.map((reason, i) => (
+                    <li
+                      key={i}
+                      className="text-sm text-text-secondary leading-relaxed flex gap-2"
+                    >
+                      <span className="text-success-500 flex-shrink-0">·</span>
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {stock.whyAvoiding.length > 0 && (
+              <div className="bg-surface rounded-2xl p-5 border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.48 0L3.16 16.25A2 2 0 005 19z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-semibold text-text-primary">
+                    Risks to watch
+                  </h3>
+                </div>
+                <ul className="space-y-2">
+                  {stock.whyAvoiding.map((reason, i) => (
+                    <li
+                      key={i}
+                      className="text-sm text-text-secondary leading-relaxed flex gap-2"
+                    >
+                      <span className="text-red-500 flex-shrink-0">·</span>
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* About */}
         <section className="bg-surface rounded-2xl p-5 border border-border">

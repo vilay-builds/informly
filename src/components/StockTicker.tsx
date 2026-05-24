@@ -15,20 +15,15 @@ interface TickerItem {
 }
 
 interface StockTickerProps {
-  region?: "us" | "india";
   speed?: number;
 }
 
-function formatPrice(n: number, region: "us" | "india"): string {
-  return n.toLocaleString(region === "india" ? "en-IN" : "en-US", {
-    maximumFractionDigits: 2,
-  });
+function formatPrice(n: number): string {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
 
-export function StockTicker({
-  region = "india",
-  speed = 60,
-}: StockTickerProps) {
+export function StockTicker({ speed = 60 }: StockTickerProps) {
+  const region = "india" as const;
   const [items, setItems] = useState<TickerItem[]>([]);
 
   const x = useMotionValue(0);
@@ -109,7 +104,7 @@ export function StockTicker({
               {stock.ticker}
             </span>
             <span className="text-xs text-text-secondary tabular-nums">
-              {formatPrice(stock.price, region)}
+              {formatPrice(stock.price)}
             </span>
             <span
               className={`text-xs font-medium tabular-nums ${

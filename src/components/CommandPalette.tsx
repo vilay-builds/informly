@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { easing } from "@/lib/motion";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
-import { getAllArticles } from "@/lib/content/articles";
-import { getAllStocks } from "@/lib/content/stocks";
+import { STARTER_STOCKS } from "@/lib/india";
 
 interface Command {
   id: string;
   title: string;
   subtitle?: string;
-  group: "Navigate" | "Articles" | "Stocks" | "Themes";
+  group: "Navigate" | "Stocks" | "Themes";
   action: () => void;
   keywords?: string;
 }
@@ -33,10 +32,7 @@ export function CommandPalette() {
       close();
     };
     return [
-      { id: "nav-feed", group: "Navigate", title: "Go to Feed", action: navigate("/") },
-      { id: "nav-discover", group: "Navigate", title: "Open Discover", action: navigate("/discover") },
-      { id: "nav-markets", group: "Navigate", title: "Open Markets", action: navigate("/markets") },
-      { id: "nav-history", group: "Navigate", title: "Reading History", action: navigate("/history") },
+      { id: "nav-home", group: "Navigate", title: "Go to Markets", action: navigate("/") },
       { id: "nav-search", group: "Navigate", title: "Open Search", action: navigate("/search") },
       { id: "nav-settings", group: "Navigate", title: "Settings", action: navigate("/settings") },
       ...themeList.map((t) => ({
@@ -49,26 +45,17 @@ export function CommandPalette() {
           close();
         },
       })),
-      ...getAllArticles().map((a) => ({
-        id: `article-${a.id}`,
-        group: "Articles" as const,
-        title: a.title,
-        subtitle: `${a.category} · ${a.source}`,
-        action: navigate(`/article/${a.id}`),
-        keywords: `${a.category} ${a.source}`,
-      })),
-      ...getAllStocks().map((s) => ({
+      ...STARTER_STOCKS.map((s) => ({
         id: `stock-${s.ticker}`,
         group: "Stocks" as const,
         title: `${s.ticker} — ${s.name}`,
-        subtitle: `${s.change >= 0 ? "+" : ""}${s.change}%`,
+        subtitle: s.sector,
         action: navigate(`/stock/${s.ticker}`),
-        keywords: s.name,
+        keywords: `${s.name} ${s.sector}`,
       })),
     ];
   }, [router, setThemeKey]);
 
-  // Filtered & grouped
   const filtered = useMemo(() => {
     if (!query.trim()) return commands.slice(0, 12);
     const q = query.toLowerCase();
@@ -80,7 +67,6 @@ export function CommandPalette() {
     );
   }, [commands, query]);
 
-  // Keyboard binding (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {

@@ -1,13 +1,9 @@
-// Gemini Flash 2.0 wrapper for AI explanations.
-// Free tier: 15 RPM, 1500 RPD. We cache aggressively by article id.
+// Gemini Flash 2.5-lite wrapper for beginner-focused stock insights.
+// Free tier: 1000 RPD on flash-lite. Cached aggressively per ticker.
 
 import "server-only";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Free tier limits per day on the project:
-// - gemini-2.5-flash:       20 RPD   (too restrictive for real usage)
-// - gemini-2.5-flash-lite:  1,000 RPD (50x more headroom, still high quality)
-// - gemini-flash-lite-latest: same as lite, just the moving alias
 const MODEL_NAME = "gemini-2.5-flash-lite";
 const FALLBACK_MODEL = "gemini-flash-lite-latest";
 
@@ -22,58 +18,6 @@ function client(): GoogleGenerativeAI | null {
   _client = new GoogleGenerativeAI(key);
   return _client;
 }
-
-export interface ExplainedLevel {
-  meaning: string;
-  context: string;
-  impact: string;
-}
-
-export interface ExplainedPayload {
-  aiSummary: string;
-  expandedBody: string; // Nova-quality article (3-5 paragraphs) when source is thin
-  levels: [ExplainedLevel, ExplainedLevel, ExplainedLevel, ExplainedLevel];
-  relatedTopics: string[];
-}
-
-// In-memory cache: article id → explanations. Persists for the function lifetime.
-const explanationCache = new Map<string, ExplainedPayload>();
-const MAX_EXPLANATION_CACHE = 200;
-
-const SYSTEM_PROMPT = `You are Nova's news interpreter. Nova is a calm news app for people who feel overwhelmed by traditional news — built to help them understand the world without jargon, fear, or fatigue.
-
-You receive a news article (often only a headline and 1-2 sentence summary from a news aggregator). Produce:
-
-1. "aiSummary" — a calm, paraphrased 2-sentence summary of what happened.
-2. "expandedBody" — a thoughtful Nova-original write-up of the story across 3-5 paragraphs. Use the source title and summary as anchors, but flesh out the story with the obvious context a well-informed reader would know. Maintain a journalistic, factual tone. Never fabricate specific numbers, quotes, or names not implied by the source. If you genuinely don't know something, frame it as a question or note that "details are still emerging".
-3. "relatedTopics" — 3-5 short topic tags, 1-3 words each.
-4. "levels" — 4 reading-level explanations. Each level has 3 fields: "meaning" (what it actually means in practical terms), "context" (background, what led to it), "impact" (why it matters to the reader).
-
-LEVEL TONE GUIDE:
-- Beginner: Everyday language. Zero jargon. Like a kind friend explaining it. 1-2 sentences per field.
-- Simple: Clear and approachable with a bit more depth. 2-3 sentences per field.
-- Standard: Standard news language with terms explained where needed. 2-3 sentences per field.
-- Expert: Detailed analysis with full financial/political/scientific terminology. 2-4 sentences per field.
-
-GENERAL RULES:
-- NEVER use emojis.
-- NEVER add markdown formatting (no **bold**, no headers).
-- NEVER fabricate facts. If something isn't in the source and isn't general knowledge, don't claim it.
-- Match the language and reading level of the source article.
-- Keep an even, calm tone. No alarmism, no hype.
-
-Return ONLY valid JSON in this exact shape (no markdown fences, no preamble):
-{
-  "aiSummary": "...",
-  "expandedBody": "Paragraph 1.\\n\\nParagraph 2.\\n\\nParagraph 3.\\n\\nOptional paragraph 4.",
-  "relatedTopics": ["..."],
-  "levels": [
-    {"meaning": "...", "context": "...", "impact": "..."},
-    {"meaning": "...", "context": "...", "impact": "..."},
-    {"meaning": "...", "context": "...", "impact": "..."},
-    {"meaning": "...", "context": "...", "impact": "..."}
-  ]
-}`;
 
 function stripJsonFences(text: string): string {
   const trimmed = text.trim();
@@ -101,7 +45,7 @@ async function generateWithFallback(
         systemInstruction: args.systemInstruction,
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: args.temperature ?? 0.7,
+          temperature: args.temperature ?? 0.6,
           maxOutputTokens: args.maxOutputTokens ?? 2048,
         },
       });
@@ -109,89 +53,42 @@ async function generateWithFallback(
       return stripJsonFences(result.response.text());
     } catch (err) {
       lastErr = err;
-      console.warn(`Gemini model ${modelName} failed, trying next`, (err as Error).message);
+      console.warn(
+        `Gemini model ${modelName} failed, trying next`,
+        (err as Error).message
+      );
     }
   }
   throw lastErr ?? new Error("All Gemini models failed");
 }
 
-function fallbackPayload(article: { title: string; aiSummary: string; body?: string }): ExplainedPayload {
-  const m = article.aiSummary || article.title;
-  const stubLevel = (style: string): ExplainedLevel => ({
-    meaning: `${style} ${m}`,
-    context: "Additional background isn't available right now. The article itself is the best source.",
-    impact: "We couldn't generate a custom explanation. Read the original story for full detail.",
-  });
-  return {
-    aiSummary: article.aiSummary || article.title,
-    expandedBody: article.body || article.aiSummary || article.title,
-    relatedTopics: [],
-    levels: [
-      stubLevel("Here's what happened:"),
-      stubLevel("In short:"),
-      stubLevel("Summary:"),
-      stubLevel("Brief:"),
-    ],
-  };
-}
+// ============ STOCK COMMENTARY ============
 
-export async function explainArticle(article: {
-  id: string;
-  title: string;
-  aiSummary: string;
-  body: string;
-  source: string;
-}): Promise<ExplainedPayload> {
-  if (explanationCache.has(article.id)) {
-    return explanationCache.get(article.id)!;
-  }
-
-  const c = client();
-  if (!c) return fallbackPayload(article);
-
-  const userPrompt = `ARTICLE TITLE: ${article.title}
-
-ARTICLE SUMMARY: ${article.aiSummary}
-
-ARTICLE BODY:
-${article.body.slice(0, 6000)}
-
-SOURCE: ${article.source}`;
-
-  try {
-    const text = await generateWithFallback(c, {
-      systemInstruction: SYSTEM_PROMPT,
-      prompt: userPrompt,
-      temperature: 0.7,
-      maxOutputTokens: 4096,
-    });
-    const parsed = JSON.parse(text) as ExplainedPayload;
-
-    // Validate shape
-    if (!parsed.levels || parsed.levels.length !== 4) {
-      throw new Error("Invalid Gemini response shape");
-    }
-    if (!parsed.expandedBody) parsed.expandedBody = article.body || article.aiSummary;
-
-    // Cache (with LRU-style eviction)
-    if (explanationCache.size >= MAX_EXPLANATION_CACHE) {
-      const firstKey = explanationCache.keys().next().value;
-      if (firstKey) explanationCache.delete(firstKey);
-    }
-    explanationCache.set(article.id, parsed);
-
-    return parsed;
-  } catch (err) {
-    console.error("Gemini explain failed", err);
-    return fallbackPayload(article);
-  }
-}
+export type TermFit = "short" | "mid" | "long" | "any";
+export type BeginnerVerdict = "yes" | "maybe" | "wait" | "avoid";
 
 export interface StockCommentary {
+  /** 2-3 sentence plain-language explanation of what the company does */
   about: string;
+  /** Bull/bear/neutral signal */
   signal: "bullish" | "bearish" | "neutral";
+  /** Why we landed on that signal — in plain language */
   signalReason: string;
+  /** Best-fit time horizon */
+  termFit: TermFit;
+  /** Why this term — short paragraph */
+  termFitReason: string;
+  /** Should a new investor consider this stock? */
+  beginnerVerdict: BeginnerVerdict;
+  /** Why this verdict — short paragraph */
+  beginnerVerdictReason: string;
+  /** 2-3 bullet reasons people are bullish */
+  whyBuying: string[];
+  /** 2-3 bullet risks / why people are cautious */
+  whyAvoiding: string[];
+  /** What broader market analysts are saying */
   analystSummary: string;
+  /** Per-metric beginner explanations */
   metricExplanations: Record<string, string>;
 }
 
@@ -199,6 +96,68 @@ const STOCK_COMMENTARY_CACHE = new Map<
   string,
   { commentary: StockCommentary; expiresAt: number }
 >();
+
+const SYSTEM_PROMPT_STOCK = `You are the in-app stock interpreter for a calm, beginner-first investing app aimed at young Indian users who are new to the market. Your goal: help them understand stocks the way a wise older sibling would — patient, clear, never preachy, never hype-y.
+
+GROUND RULES:
+- Always use everyday language. When you must use a financial term, explain it inline in plain English.
+- Be honest about risk. Never sound like a finsta pump or a doomer thread.
+- Never recommend specific buys or sells. Frame everything as "what someone might consider".
+- Never use emojis. Never use markdown formatting (no **bold**, no bullet symbols — JSON arrays are bullets enough).
+- Stay factual; if you don't know something specific, say "details aren't clear" rather than inventing numbers.
+- All amounts in INR (₹) when the context is Indian. Use Indian numbering (Lakh / Crore) where natural.
+
+REQUIRED JSON SHAPE (no markdown fences, no preamble):
+{
+  "about": "2-3 sentence plain explanation of what the company actually does.",
+  "signal": "bullish" | "bearish" | "neutral",
+  "signalReason": "2-3 sentences. Why is it bullish/bearish/neutral RIGHT NOW based on the live data and headlines provided.",
+  "termFit": "short" | "mid" | "long" | "any",
+  "termFitReason": "2-3 sentences. Why does this stock fit that horizon best for a beginner? Mention what the timeframes mean (short = weeks to a few months, mid = 6 months to ~2 years, long = 3+ years).",
+  "beginnerVerdict": "yes" | "maybe" | "wait" | "avoid",
+  "beginnerVerdictReason": "2-3 sentences. Would a true beginner be reasonable to look at this stock? Be honest. If volatility or complexity is high, say so.",
+  "whyBuying": ["2-3 concise bullet-phrase reasons people are bullish. Each 1 short sentence."],
+  "whyAvoiding": ["2-3 concise bullet-phrase risks or reasons people are cautious. Each 1 short sentence."],
+  "analystSummary": "2-3 sentences. Stance of broader market analysts and any near-term catalysts. If unknown, say so honestly.",
+  "metricExplanations": {
+    "P/E Ratio": "1-2 sentences. What this number means for THIS company. Use plain language.",
+    "Market Cap": "1 sentence. What the size means in context.",
+    "52-Week Range": "1 sentence. Whether the price is near a high or low.",
+    "Day Change": "1 sentence. What today's move means.",
+    "Dividend Yield": "1 sentence. What this means for shareholders."
+  }
+}`;
+
+function fallbackStockCommentary(input: {
+  ticker: string;
+  name: string;
+  longBusinessSummary?: string;
+  changePercent: number;
+}): StockCommentary {
+  return {
+    about:
+      input.longBusinessSummary?.slice(0, 400) ??
+      `${input.name} is listed on the NSE. Detailed company info is temporarily unavailable.`,
+    signal:
+      input.changePercent > 1
+        ? "bullish"
+        : input.changePercent < -1
+          ? "bearish"
+          : "neutral",
+    signalReason:
+      "Live AI commentary is temporarily unavailable. The signal above is a rough read based on today's price movement only.",
+    termFit: "any",
+    termFitReason:
+      "We couldn't generate a horizon view right now. As a rule of thumb: short term means weeks to a few months, mid term means 6 months to about 2 years, and long term means 3 years or more.",
+    beginnerVerdict: "wait",
+    beginnerVerdictReason:
+      "Detailed beginner guidance is temporarily unavailable. When in doubt, take time to read about the company before deciding.",
+    whyBuying: [],
+    whyAvoiding: [],
+    analystSummary: "Analyst summary is temporarily unavailable.",
+    metricExplanations: {},
+  };
+}
 
 export async function explainStock(input: {
   ticker: string;
@@ -210,6 +169,7 @@ export async function explainStock(input: {
   peRatio: number | null;
   weekHigh: number | null;
   weekLow: number | null;
+  dividendYield?: number | null;
   recentNewsTitles?: string[];
 }): Promise<StockCommentary> {
   const cacheKey = input.ticker.toUpperCase();
@@ -217,55 +177,37 @@ export async function explainStock(input: {
   if (cached && cached.expiresAt > Date.now()) return cached.commentary;
 
   const c = client();
-  if (!c) {
-    return {
-      about: input.longBusinessSummary ?? `${input.name} is a publicly traded company.`,
-      signal:
-        input.changePercent > 1 ? "bullish" : input.changePercent < -1 ? "bearish" : "neutral",
-      signalReason: "Live AI commentary is temporarily unavailable.",
-      analystSummary: "Analyst summary is temporarily unavailable.",
-      metricExplanations: {},
-    };
-  }
+  if (!c) return fallbackStockCommentary(input);
 
   const newsBlock = input.recentNewsTitles?.length
     ? `\nRecent headlines:\n${input.recentNewsTitles.slice(0, 5).map((t) => `- ${t}`).join("\n")}`
     : "";
 
-  const prompt = `You are Nova's calm equity interpreter. Given live data on a publicly traded stock, write beginner-friendly commentary that helps a casual investor understand it.
-
-STOCK: ${input.ticker} (${input.name})
-PRICE: ${input.price}
+  const prompt = `STOCK: ${input.ticker} (${input.name}) — NSE listed
+PRICE: ₹${input.price}
 DAY CHANGE: ${input.changePercent.toFixed(2)}%
 MARKET CAP: ${input.marketCap ?? "N/A"}
 P/E: ${input.peRatio ?? "N/A"}
-52W RANGE: ${input.weekLow ?? "?"} – ${input.weekHigh ?? "?"}
-${input.longBusinessSummary ? `\nBUSINESS DESCRIPTION:\n${input.longBusinessSummary.slice(0, 1200)}` : ""}${newsBlock}
+DIVIDEND YIELD: ${input.dividendYield ?? "N/A"}
+52W RANGE: ₹${input.weekLow ?? "?"} – ₹${input.weekHigh ?? "?"}
+${input.longBusinessSummary ? `\nBUSINESS DESCRIPTION:\n${input.longBusinessSummary.slice(0, 1500)}` : ""}${newsBlock}
 
-Return ONLY valid JSON, no markdown, in this shape:
-{
-  "about": "2-3 sentence plain-language explanation of what this company does. Avoid jargon.",
-  "signal": "bullish" | "bearish" | "neutral",
-  "signalReason": "2-3 sentences explaining the current signal in plain language. Reference the recent move and any obvious drivers.",
-  "analystSummary": "2-3 sentences with the general analyst stance and any near-term catalysts. If unknown, be honest and say so.",
-  "metricExplanations": {
-    "P/E Ratio": "1-2 sentences explaining this stock's P/E in beginner terms",
-    "Market Cap": "1 sentence putting the cap in context",
-    "52-Week Range": "1 sentence on whether it's near highs or lows",
-    "Day Change": "1 sentence on what today's % move means"
-  }
-}
-
-Never use emojis. Never embellish facts. If a metric is missing, write "Data not available" for that key.`;
+Now produce the full JSON commentary for a beginner-first Indian investor.`;
 
   try {
     const text = await generateWithFallback(c, {
+      systemInstruction: SYSTEM_PROMPT_STOCK,
       prompt,
-      temperature: 0.6,
-      maxOutputTokens: 1500,
+      temperature: 0.55,
+      maxOutputTokens: 2500,
     });
     const parsed = JSON.parse(text) as StockCommentary;
     if (!parsed.about || !parsed.signal) throw new Error("Invalid stock JSON");
+
+    // Ensure arrays even if the model omitted them
+    parsed.whyBuying = parsed.whyBuying ?? [];
+    parsed.whyAvoiding = parsed.whyAvoiding ?? [];
+    parsed.metricExplanations = parsed.metricExplanations ?? {};
 
     STOCK_COMMENTARY_CACHE.set(cacheKey, {
       commentary: parsed,
@@ -274,16 +216,11 @@ Never use emojis. Never embellish facts. If a metric is missing, write "Data not
     return parsed;
   } catch (err) {
     console.error("Stock explain failed", err);
-    return {
-      about: input.longBusinessSummary ?? `${input.name} is a publicly traded company.`,
-      signal:
-        input.changePercent > 1 ? "bullish" : input.changePercent < -1 ? "bearish" : "neutral",
-      signalReason: "Live AI commentary is temporarily unavailable.",
-      analystSummary: "Analyst summary is temporarily unavailable.",
-      metricExplanations: {},
-    };
+    return fallbackStockCommentary(input);
   }
 }
+
+// ============ MARKET MOOD ============
 
 export interface MarketSummary {
   title: string;
@@ -296,51 +233,55 @@ const MARKET_SUMMARY_CACHE = new Map<
 >();
 
 export async function explainMarketState(
-  region: "us" | "india",
   indices: { name: string; changePercent: number }[]
 ): Promise<MarketSummary> {
-  const cached = MARKET_SUMMARY_CACHE.get(region);
+  const cacheKey = "india";
+  const cached = MARKET_SUMMARY_CACHE.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.summary;
 
   const c = client();
   if (!c) {
     return {
-      title: `${region === "india" ? "Indian" : "US"} markets opened today`,
-      explanation: "We're temporarily unable to summarize today's market mood.",
+      title: "Indian markets opened today",
+      explanation:
+        "We're temporarily unable to summarize today's market mood. Check back in a few minutes.",
     };
   }
 
   const indexList = indices
-    .map((i) => `${i.name}: ${i.changePercent >= 0 ? "+" : ""}${i.changePercent.toFixed(2)}%`)
+    .map(
+      (i) =>
+        `${i.name}: ${i.changePercent >= 0 ? "+" : ""}${i.changePercent.toFixed(2)}%`
+    )
     .join(", ");
 
-  try {
-    const prompt = `You are Nova's calm market interpreter.
+  const prompt = `You are the calm market interpreter for a beginner-friendly Indian investing app.
 
-Given today's ${region === "india" ? "Indian" : "US"} index movements: ${indexList}
+Today's Indian index movements: ${indexList}
 
-Write a calm one-sentence headline and a 2-sentence plain-language explanation. Avoid jargon. Avoid emojis. Avoid alarmism.
+Write a calm one-sentence headline (under 12 words) and a 2-sentence plain-language explanation of what's happening in plain Hinglish-free English. Avoid jargon. Avoid emojis. Avoid alarmism.
 
 Return JSON: {"title": "...", "explanation": "..."}`;
 
+  try {
     const text = await generateWithFallback(c, {
       prompt,
-      temperature: 0.6,
-      maxOutputTokens: 256,
+      temperature: 0.55,
+      maxOutputTokens: 300,
     });
     const parsed = JSON.parse(text) as MarketSummary;
 
-    MARKET_SUMMARY_CACHE.set(region, {
+    MARKET_SUMMARY_CACHE.set(cacheKey, {
       summary: parsed,
-      expiresAt: Date.now() + 15 * 60 * 1000, // 15 min
+      expiresAt: Date.now() + 15 * 60 * 1000,
     });
     return parsed;
   } catch (err) {
     console.error("Market summary failed", err);
     return {
-      title: `${region === "india" ? "Indian" : "US"} markets opened today`,
+      title: "Indian markets opened today",
       explanation:
-        "We're temporarily unable to summarize today's market mood.",
+        "We're temporarily unable to summarize today's market mood. Check back in a few minutes.",
     };
   }
 }

@@ -53,15 +53,16 @@ function makeStore<T>(key: string, defaults: T) {
 }
 
 // ============ WATCHLIST ============
-const defaultWatchlistUS = ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL"];
-const defaultWatchlistIN = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "BHARTIARTL"];
+// Note: India-only platform. We keep the region parameter for future
+// flexibility but everything routes to "india" today.
+const defaultWatchlistIN: string[] = [];
 
 const watchlistStore = makeStore<{ us: string[]; india: string[] }>(
   "nova-watchlist",
-  { us: defaultWatchlistUS, india: defaultWatchlistIN }
+  { us: [], india: defaultWatchlistIN }
 );
 
-export function useWatchlist(region: "us" | "india") {
+export function useWatchlist(region: "us" | "india" = "india") {
   const [state, update] = watchlistStore.useStore();
   const list = state[region];
 
@@ -110,16 +111,12 @@ export function useWatchlist(region: "us" | "india") {
 
 // ============ NOTIFICATIONS ============
 export interface NotificationPrefs {
-  dailyBrief: boolean;
   marketAlerts: boolean;
-  breakingNews: boolean;
   weeklyDigest: boolean;
 }
 
 const notifStore = makeStore<NotificationPrefs>("nova-notif-prefs", {
-  dailyBrief: true,
   marketAlerts: true,
-  breakingNews: false,
   weeklyDigest: true,
 });
 
@@ -134,73 +131,4 @@ export function useNotificationPrefs() {
   );
 
   return { prefs: state, setPref };
-}
-
-// ============ INTERESTS ============
-const interestsStore = makeStore<string[]>("nova-interests", [
-  "technology",
-  "world",
-  "economy",
-]);
-
-export function useInterests() {
-  const [state, update] = interestsStore.useStore();
-
-  const toggle = useCallback(
-    (key: string) => {
-      update((prev) =>
-        prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-      );
-    },
-    [update]
-  );
-
-  return { interests: state, toggle, setAll: update };
-}
-
-// ============ READING HISTORY ============
-export interface ReadingEntry {
-  id: string;
-  title: string;
-  category: string;
-  categoryColor: string;
-  image?: string;
-  readAt: number;
-  progress: number; // 0..1
-}
-
-const historyStore = makeStore<ReadingEntry[]>("nova-reading-history", []);
-
-export function useReadingHistory() {
-  const [state, update] = historyStore.useStore();
-
-  const record = useCallback(
-    (entry: Omit<ReadingEntry, "readAt">) => {
-      update((prev) => {
-        const filtered = prev.filter((e) => e.id !== entry.id);
-        return [{ ...entry, readAt: Date.now() }, ...filtered].slice(0, 50);
-      });
-    },
-    [update]
-  );
-
-  const clear = useCallback(() => update([]), [update]);
-
-  return { history: state, record, clear };
-}
-
-// ============ STREAK ============
-// Computed from reading history — counts consecutive days with at least one article opened.
-export function computeStreak(history: ReadingEntry[]): number {
-  if (history.length === 0) return 0;
-  const days = new Set(
-    history.map((e) => new Date(e.readAt).toDateString())
-  );
-  let streak = 0;
-  const cursor = new Date();
-  while (days.has(cursor.toDateString())) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
 }

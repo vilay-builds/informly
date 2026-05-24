@@ -5,64 +5,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button, IconButton } from "@/components/ui";
 import { useUserPreferences } from "@/lib/userPreferences";
+import { useWatchlist } from "@/lib/persistence";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
+import { STARTER_STOCKS } from "@/lib/india";
 import { easing } from "@/lib/motion";
 
-const STEPS = ["welcome", "name", "region", "interests", "theme", "reading", "done"] as const;
+const STEPS = ["welcome", "name", "watchlist", "theme", "done"] as const;
 type Step = (typeof STEPS)[number];
-
-const CATEGORIES = [
-  { key: "technology", label: "Technology" },
-  { key: "business", label: "Business" },
-  { key: "climate", label: "Climate" },
-  { key: "health", label: "Health" },
-  { key: "politics", label: "Politics" },
-  { key: "science", label: "Science" },
-  { key: "world", label: "World" },
-  { key: "economy", label: "Economy" },
-  { key: "sports", label: "Sports" },
-  { key: "entertainment", label: "Culture" },
-];
-
-const READING_MODES = [
-  {
-    value: 0,
-    title: "Beginner",
-    desc: "Everyday language, no jargon. Like a friend explaining the news.",
-  },
-  {
-    value: 1,
-    title: "Simple",
-    desc: "Clear and approachable with a bit more depth.",
-  },
-  {
-    value: 2,
-    title: "Standard",
-    desc: "Standard news language with terms explained where needed.",
-  },
-  {
-    value: 3,
-    title: "Expert",
-    desc: "Detailed analysis with full financial and political terminology.",
-  },
-];
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { prefs, update, completeOnboarding, hydrated } = useUserPreferences();
   const { themeKey, setThemeKey } = useTheme();
+  const { list: watchlist, toggle } = useWatchlist("india");
+
   const [step, setStep] = useState<Step>("welcome");
   const [name, setName] = useState("");
-  const [region, setRegion] = useState<"us" | "india">("india");
-  const [interests, setInterests] = useState<string[]>([
-    "technology",
-    "world",
-    "economy",
-  ]);
-  const [reading, setReading] = useState<0 | 1 | 2 | 3>(1);
 
-  // If already onboarded, skip
   useEffect(() => {
     if (hydrated && prefs.onboardedAt) {
       router.replace("/");
@@ -76,7 +36,6 @@ export default function OnboardingPage() {
     const i = STEPS.indexOf(step);
     if (i < STEPS.length - 1) setStep(STEPS[i + 1]);
   };
-
   const back = () => {
     const i = STEPS.indexOf(step);
     if (i > 0) setStep(STEPS[i - 1]);
@@ -85,23 +44,14 @@ export default function OnboardingPage() {
   const finish = () => {
     update({
       name: name.trim() || "there",
-      marketRegion: region,
-      interests,
-      readingMode: reading,
+      marketRegion: "india",
     });
     completeOnboarding();
     router.replace("/");
   };
 
-  const toggleInterest = (key: string) => {
-    setInterests((curr) =>
-      curr.includes(key) ? curr.filter((c) => c !== key) : [...curr, key]
-    );
-  };
-
   return (
     <div className="min-h-[100dvh] flex flex-col">
-      {/* Top bar */}
       <div className="px-5 pt-6 pb-4 flex items-center gap-3">
         {step !== "welcome" && step !== "done" && (
           <IconButton variant="ghost" size="sm" label="Back" onClick={back}>
@@ -139,11 +89,12 @@ export default function OnboardingPage() {
                 </span>
               </div>
               <h1 className="text-4xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-4 leading-tight">
-                Welcome to Nova
+                The calm way to follow stocks.
               </h1>
               <p className="text-base text-text-secondary leading-relaxed mb-10">
-                A calmer way to follow the news and the markets — designed to
-                help you understand the world without feeling overwhelmed.
+                Build a watchlist of Indian stocks you care about. Tap any one
+                to see live charts, plain-language insights, and what really
+                matters for a new investor.
               </p>
               <Button size="lg" fullWidth onClick={next}>
                 Get started
@@ -170,7 +121,7 @@ export default function OnboardingPage() {
                 What should we call you?
               </h2>
               <p className="text-sm text-text-secondary leading-relaxed mb-8">
-                We&apos;ll use your name to make Nova feel a bit more personal.
+                We&apos;ll greet you on the home screen.
               </p>
               <input
                 type="text"
@@ -188,121 +139,80 @@ export default function OnboardingPage() {
             </motion.div>
           )}
 
-          {step === "region" && (
+          {step === "watchlist" && (
             <motion.div
-              key="region"
+              key="watchlist"
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -16 }}
               transition={easing.spring}
-              className="flex-1 flex flex-col max-w-md mx-auto w-full pt-8"
+              className="flex-1 flex flex-col max-w-md mx-auto w-full pt-4"
             >
               <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-2">
-                Which market do you follow?
-              </h2>
-              <p className="text-sm text-text-secondary leading-relaxed mb-8">
-                Choose your default — you can switch anytime from the Markets
-                tab.
-              </p>
-              <div className="space-y-3">
-                {[
-                  {
-                    key: "india" as const,
-                    title: "Indian markets",
-                    sub: "NIFTY 50, SENSEX, NSE & BSE listings",
-                  },
-                  {
-                    key: "us" as const,
-                    title: "US markets",
-                    sub: "S&P 500, NASDAQ, NYSE listings",
-                  },
-                ].map((r) => (
-                  <button
-                    key={r.key}
-                    onClick={() => setRegion(r.key)}
-                    className={`w-full text-left p-5 rounded-2xl border-2 transition-all ${
-                      region === r.key
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-border bg-surface hover:border-border-hover"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-base font-semibold text-text-primary">
-                          {r.title}
-                        </p>
-                        <p className="text-xs text-text-tertiary mt-0.5">
-                          {r.sub}
-                        </p>
-                      </div>
-                      {region === r.key && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center"
-                        >
-                          <svg width="14" height="14" fill="white" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="mt-auto pb-6 pt-8">
-                <Button size="lg" fullWidth onClick={next}>
-                  Continue
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === "interests" && (
-            <motion.div
-              key="interests"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={easing.spring}
-              className="flex-1 flex flex-col max-w-md mx-auto w-full pt-8"
-            >
-              <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-2">
-                What interests you?
+                Pick your first stocks
               </h2>
               <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                Pick at least three. Your feed will prioritize these topics.
+                Tap at least 3 to get started. You can always add more later
+                from Search.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => {
-                  const active = interests.includes(cat.key);
+              <div className="space-y-2 overflow-y-auto -mx-2 px-2">
+                {STARTER_STOCKS.map((s) => {
+                  const watching = watchlist.includes(s.ticker);
                   return (
-                    <motion.button
-                      key={cat.key}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleInterest(cat.key)}
-                      className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all border-2 ${
-                        active
-                          ? "bg-primary-500 text-white border-primary-500"
-                          : "bg-surface text-text-secondary border-border hover:border-border-hover"
+                    <button
+                      key={s.ticker}
+                      onClick={() => toggle(s.ticker)}
+                      className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl transition-colors border ${
+                        watching
+                          ? "border-primary-300 bg-primary-50"
+                          : "border-border bg-surface hover:border-border-hover"
                       }`}
                     >
-                      {cat.label}
-                    </motion.button>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-text-primary">
+                            {s.ticker}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
+                            {s.sector}
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary truncate mt-0.5">
+                          {s.blurb}
+                        </p>
+                      </div>
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          watching
+                            ? "bg-primary-500 text-white"
+                            : "bg-surface-secondary text-text-tertiary border border-border"
+                        }`}
+                      >
+                        {watching ? (
+                          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
                   );
                 })}
               </div>
-              <div className="mt-auto pb-6 pt-8">
+              <div className="mt-auto pb-6 pt-6 bg-gradient-to-t from-background via-background to-transparent">
                 <Button
                   size="lg"
                   fullWidth
-                  disabled={interests.length < 3}
+                  disabled={watchlist.length < 3}
                   onClick={next}
                 >
                   Continue
-                  {interests.length < 3 && (
+                  {watchlist.length < 3 && (
                     <span className="text-xs opacity-70 ml-2">
-                      ({interests.length}/3)
+                      ({watchlist.length}/3)
                     </span>
                   )}
                 </Button>
@@ -323,7 +233,8 @@ export default function OnboardingPage() {
                 Pick your mood
               </h2>
               <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                The theme sets the colors and subtle background hue of Nova.
+                The theme sets the colors and subtle background hue. Change it
+                anytime in Settings.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {themeList.map((t) => {
@@ -363,68 +274,6 @@ export default function OnboardingPage() {
             </motion.div>
           )}
 
-          {step === "reading" && (
-            <motion.div
-              key="reading"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={easing.spring}
-              className="flex-1 flex flex-col max-w-md mx-auto w-full pt-8"
-            >
-              <h2 className="text-2xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-2">
-                Default reading mode
-              </h2>
-              <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                How should we explain articles to you? You can change this on
-                each article.
-              </p>
-              <div className="space-y-2.5">
-                {READING_MODES.map((mode) => {
-                  const active = reading === mode.value;
-                  return (
-                    <button
-                      key={mode.value}
-                      onClick={() => setReading(mode.value as 0 | 1 | 2 | 3)}
-                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
-                        active
-                          ? "border-primary-500 bg-primary-50"
-                          : "border-border bg-surface hover:border-border-hover"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-text-primary">
-                            {mode.title}
-                          </p>
-                          <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                            {mode.desc}
-                          </p>
-                        </div>
-                        {active && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0 mt-0.5"
-                          >
-                            <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                            </svg>
-                          </motion.div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-auto pb-6 pt-8">
-                <Button size="lg" fullWidth onClick={next}>
-                  Continue
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
           {step === "done" && (
             <motion.div
               key="done"
@@ -448,8 +297,8 @@ export default function OnboardingPage() {
                 You&apos;re all set{name && `, ${name.split(" ")[0]}`}
               </h1>
               <p className="text-base text-text-secondary leading-relaxed mb-10">
-                Your personalized feed is ready. Take a deep breath and dive in
-                — we&apos;ll meet you where you are.
+                Your watchlist is ready. Tap any stock to see live charts,
+                what the company does, and what to watch out for.
               </p>
               <Button size="lg" fullWidth onClick={finish}>
                 Open Nova

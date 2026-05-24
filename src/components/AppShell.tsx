@@ -11,14 +11,10 @@ const STANDALONE_ROUTES = ["/onboarding"];
 const NO_TICKER_ROUTES = ["/settings", "/onboarding"];
 
 const ROUTE_KEY: Record<string, string> = {
-  "/": "feed",
-  "/discover": "discover",
-  "/markets": "markets",
+  "/": "markets",
   "/search": "search",
   "/settings": "you",
   "/stock": "markets",
-  "/article": "feed",
-  "/history": "you",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -34,7 +30,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [hydrated, prefs.onboardedAt, pathname, router]);
 
-  const activeKey = ROUTE_KEY[pathname] || "feed";
+  const matchedRouteKey = Object.entries(ROUTE_KEY).find(([prefix]) =>
+    prefix === "/" ? pathname === "/" : pathname.startsWith(prefix)
+  );
+  const activeKey = matchedRouteKey ? matchedRouteKey[1] : "markets";
   const showTicker = !NO_TICKER_ROUTES.some((r) => pathname.startsWith(r));
 
   if (STANDALONE_ROUTES.includes(pathname)) {
@@ -44,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="lg:pl-64">
       <Sidebar active={activeKey} />
-      {showTicker && <StockTicker region={prefs.marketRegion} />}
+      {showTicker && <StockTicker />}
       {children}
       <CommandPalette />
     </div>

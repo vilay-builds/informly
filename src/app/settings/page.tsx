@@ -2,66 +2,17 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
-import Link from "next/link";
 import { useUserPreferences } from "@/lib/userPreferences";
 import {
   useNotificationPrefs,
-  useInterests,
   useWatchlist,
-  useReadingHistory,
-  computeStreak,
   NotificationPrefs,
 } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
-
-const THEME_ICONS: Record<string, React.ReactNode> = {
-  dusk: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-    </svg>
-  ),
-  papaya: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  ),
-  forest: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  ),
-  rose: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
-  ),
-  aurum: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  ),
-  midnight: (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  ),
-};
-
-const CATEGORY_OPTIONS = [
-  { key: "technology", label: "Technology" },
-  { key: "business", label: "Business" },
-  { key: "climate", label: "Climate" },
-  { key: "health", label: "Health" },
-  { key: "politics", label: "Politics" },
-  { key: "science", label: "Science" },
-  { key: "world", label: "World" },
-  { key: "economy", label: "Economy" },
-  { key: "sports", label: "Sports" },
-  { key: "entertainment", label: "Culture" },
-];
 
 const NOTIFICATION_OPTIONS: {
   key: keyof NotificationPrefs;
@@ -69,31 +20,21 @@ const NOTIFICATION_OPTIONS: {
   desc: string;
 }[] = [
   { key: "marketAlerts", label: "Market alerts", desc: "When your stocks move significantly" },
-  { key: "breakingNews", label: "Breaking news", desc: "Major world events only" },
-  { key: "weeklyDigest", label: "Weekly digest", desc: "What you missed this week" },
+  { key: "weeklyDigest", label: "Weekly digest", desc: "What moved on your watchlist this week" },
 ];
 
 export default function SettingsPage() {
   const router = useRouter();
   const { themeKey, setThemeKey } = useTheme();
   const { prefs, reset } = useUserPreferences();
-  const { interests, toggle: toggleInterest } = useInterests();
   const { prefs: notifPrefs, setPref } = useNotificationPrefs();
-  const { list: usWatchlist, remove: removeUS } = useWatchlist("us");
-  const { list: indiaWatchlist, remove: removeIN } = useWatchlist("india");
-  const { history } = useReadingHistory();
+  const { list: watchlist, remove } = useWatchlist("india");
   const toast = useToast();
-
-  const streak = computeStreak(history);
-  const allWatchlist = [
-    ...usWatchlist.map((t) => ({ ticker: t, region: "us" as const })),
-    ...indiaWatchlist.map((t) => ({ ticker: t, region: "india" as const })),
-  ];
 
   const handleResetOnboarding = () => {
     if (
       window.confirm(
-        "Reset Nova and run onboarding again? Your saved articles and theme will stay."
+        "Reset onboarding and pick everything again? Your theme and watchlist will stay."
       )
     ) {
       reset();
@@ -132,7 +73,7 @@ export default function SettingsPage() {
                   {prefs.name || "Welcome"}
                 </p>
                 <p className="text-xs text-text-tertiary">
-                  Reading since{" "}
+                  Following since{" "}
                   {prefs.onboardedAt
                     ? new Date(prefs.onboardedAt).toLocaleDateString(undefined, {
                         month: "long",
@@ -144,51 +85,14 @@ export default function SettingsPage() {
             </div>
             <div className="border-t border-border px-4 py-3 flex items-center justify-between">
               <div className="text-center flex-1">
-                <p className="text-xs text-text-tertiary">Articles read</p>
-                <p className="text-lg font-bold text-text-primary">{history.length}</p>
+                <p className="text-xs text-text-tertiary">Watchlist</p>
+                <p className="text-lg font-bold text-text-primary">{watchlist.length}</p>
               </div>
               <div className="text-center flex-1">
-                <p className="text-xs text-text-tertiary">Day streak</p>
-                <div className="flex items-center justify-center gap-1">
-                  <p className="text-lg font-bold text-text-primary">{streak}</p>
-                  {streak > 0 && (
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-accent-500">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                    </svg>
-                  )}
-                </div>
+                <p className="text-xs text-text-tertiary">Market</p>
+                <p className="text-lg font-bold text-text-primary">India</p>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* QUICK LINKS */}
-        <section>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Quick Links
-          </h3>
-          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-            {[
-              { href: "/history", label: "Reading History", desc: "Everything you've read" },
-            ].map((link, i) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center justify-between px-4 py-3.5 hover:bg-surface-secondary transition-colors ${
-                  i > 0 ? "border-t border-border" : ""
-                }`}
-              >
-                <div>
-                  <p className="text-sm font-medium text-text-primary">
-                    {link.label}
-                  </p>
-                  <p className="text-xs text-text-tertiary">{link.desc}</p>
-                </div>
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            ))}
           </div>
         </section>
 
@@ -234,20 +138,17 @@ export default function SettingsPage() {
                       <p className="text-sm font-semibold text-text-primary">{theme.name}</p>
                       <p className="text-[10px] text-text-tertiary">{theme.subtitle}</p>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-text-tertiary">{THEME_ICONS[theme.key]}</span>
-                      {isActive && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center"
-                        >
-                          <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </div>
+                    {isActive && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center"
+                      >
+                        <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                        </svg>
+                      </motion.div>
+                    )}
                   </div>
                 </motion.button>
               );
@@ -255,58 +156,29 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* INTERESTS */}
-        <section>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Your Interests
-          </h3>
-          <div className="bg-surface rounded-2xl p-4 border border-border">
-            <p className="text-xs text-text-secondary mb-4">
-              Topics you care about — your feed prioritizes these.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_OPTIONS.map((cat) => {
-                const active = interests.includes(cat.key);
-                return (
-                  <motion.button
-                    key={cat.key}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => toggleInterest(cat.key)}
-                    className={`px-3 py-2 rounded-full text-xs font-medium transition-all border ${
-                      active
-                        ? "bg-primary-50 text-primary-700 border-primary-200"
-                        : "bg-surface-secondary text-text-tertiary border-transparent hover:border-border"
-                    }`}
-                  >
-                    {cat.label}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
         {/* WATCHLIST */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Stock Watchlist
+            Your Watchlist
           </h3>
           <div className="bg-surface rounded-2xl p-4 border border-border">
             <p className="text-xs text-text-secondary mb-4">
-              These stocks appear in your watchlist and ticker bar.
+              Stocks you&apos;re following. Tap the chip to remove.
             </p>
-            {allWatchlist.length === 0 ? (
-              <p className="text-xs text-text-tertiary text-center py-3">
-                No stocks watched yet. Tap the star on any stock detail page.
-              </p>
+            {watchlist.length === 0 ? (
+              <Link
+                href="/search"
+                className="block text-center py-4 text-xs text-primary-600 font-medium"
+              >
+                Search and star any stock to add it
+              </Link>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {allWatchlist.map(({ ticker, region }) => (
+                {watchlist.map((ticker) => (
                   <button
-                    key={`${region}-${ticker}`}
+                    key={ticker}
                     onClick={() => {
-                      if (region === "us") removeUS(ticker);
-                      else removeIN(ticker);
+                      remove(ticker);
                       toast.show({
                         message: `${ticker} removed from watchlist`,
                         variant: "success",
@@ -398,13 +270,9 @@ export default function SettingsPage() {
             <div className="border-t border-border" />
             <div className="px-4 py-3.5 flex items-center justify-between">
               <span className="text-sm text-text-tertiary">Version</span>
-              <span className="text-xs text-text-tertiary">Nova 0.2.0</span>
+              <span className="text-xs text-text-tertiary">Nova 0.3.0</span>
             </div>
           </div>
-          <p className="text-[11px] text-text-tertiary text-center mt-6 leading-relaxed">
-            Made with care for everyone who wants to understand the world
-            without feeling overwhelmed.
-          </p>
         </section>
       </main>
 

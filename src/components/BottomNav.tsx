@@ -6,33 +6,22 @@ import { tap } from "@/lib/motion";
 
 const navItems = [
   {
-    label: "Feed",
-    href: "/",
-    key: "feed",
-    icon: (
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" />
-      </svg>
-    ),
-  },
-  {
-    label: "Discover",
-    href: "/discover",
-    key: "discover",
-    icon: (
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="9" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-      </svg>
-    ),
-  },
-  {
     label: "Markets",
-    href: "/markets",
+    href: "/",
     key: "markets",
     icon: (
       <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
+    label: "Search",
+    href: "/search",
+    key: "search",
+    icon: (
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     ),
   },
@@ -52,7 +41,7 @@ interface BottomNavProps {
   active?: string;
 }
 
-export function BottomNav({ active = "feed" }: BottomNavProps) {
+export function BottomNav({ active = "markets" }: BottomNavProps) {
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 glass-strong border-t border-white/30 z-50">
       <div className="max-w-lg mx-auto flex items-center justify-around py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
@@ -62,7 +51,7 @@ export function BottomNav({ active = "feed" }: BottomNavProps) {
             <Link key={item.key} href={item.href}>
               <motion.div
                 whileTap={tap}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+                className={`relative flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-xl transition-colors ${
                   isActive
                     ? "text-primary-600"
                     : "text-text-tertiary hover:text-text-secondary"

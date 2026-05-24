@@ -14,30 +14,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    key: "feed",
-    label: "Feed",
-    href: "/",
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" />
-      </svg>
-    ),
-  },
-  {
-    key: "discover",
-    label: "Discover",
-    href: "/discover",
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="9" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-      </svg>
-    ),
-  },
-  {
     key: "markets",
     label: "Markets",
-    href: "/markets",
+    href: "/",
     icon: (
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -60,7 +39,7 @@ interface SidebarProps {
   active?: string;
 }
 
-export function Sidebar({ active = "feed" }: SidebarProps) {
+export function Sidebar({ active = "markets" }: SidebarProps) {
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 glass-strong border-r border-white/30 z-30 flex-col">
       <div className="px-6 pt-7 pb-5">
