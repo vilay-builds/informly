@@ -178,16 +178,24 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                   name={isActive ? `stock-card-${stock.ticker}` : undefined}
                 >
                   <div
-                    className={`h-full rounded-3xl overflow-hidden flex flex-col relative ${
-                      isPositive
-                        ? "bg-gradient-to-br from-surface to-success-400/5"
-                        : "bg-gradient-to-br from-surface to-red-50/40"
-                    } border border-border`}
-                  style={{
-                    boxShadow:
-                      "0 24px 56px -16px rgba(0,0,0,0.18), 0 6px 16px -6px rgba(0,0,0,0.08)",
-                  }}
-                >
+                    className="h-full rounded-3xl overflow-hidden flex flex-col relative bg-surface border border-border"
+                    style={{
+                      // Solid surface + subtle themed gradient overlay using the
+                      // user's theme primary color. The direction tint (green/red)
+                      // is layered on top very gently so the card stays inviting
+                      // but never see-through.
+                      backgroundImage: `
+                        linear-gradient(135deg, color-mix(in srgb, var(--color-primary-500) 5%, transparent), transparent 55%),
+                        linear-gradient(315deg, ${
+                          isPositive
+                            ? "color-mix(in srgb, #22c55e 6%, transparent)"
+                            : "color-mix(in srgb, #ef4444 5%, transparent)"
+                        }, transparent 60%)
+                      `,
+                      boxShadow:
+                        "0 24px 56px -16px rgba(0,0,0,0.18), 0 6px 16px -6px rgba(0,0,0,0.08)",
+                    }}
+                  >
                   {/* Header */}
                   <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                     <div className="min-w-0">
