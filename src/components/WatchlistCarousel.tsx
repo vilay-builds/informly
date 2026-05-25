@@ -132,7 +132,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
         </div>
       </div>
 
-      <div className="relative h-[340px]" style={{ perspective: "1200px" }}>
+      <div className="relative h-[300px]" style={{ perspective: "1200px" }}>
         <AnimatePresence initial={false}>
           {stocks.map((stock, i) => {
             const offset = i - index;
@@ -252,48 +252,30 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                   </div>
 
                   {/* Beginner-friendly facts */}
-                  <div className="px-5 pt-3 pb-3 border-t border-border/60 flex items-center justify-between gap-3">
+                  <div className="px-5 py-4 border-t border-border/40 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[10px] text-text-tertiary mb-0.5">
-                        Company size
+                      <p className="text-[10px] text-text-tertiary mb-1 uppercase tracking-wider">
+                        Size
                       </p>
                       <p className="text-xs font-semibold text-text-primary truncate">
-                        {tier.label} · {friendlyCap}
+                        {tier.label}
+                      </p>
+                      <p className="text-[11px] text-text-tertiary tabular-nums truncate">
+                        {friendlyCap}
                       </p>
                     </div>
                     {dayRange && (
                       <div className="text-right min-w-0">
-                        <p className="text-[10px] text-text-tertiary mb-0.5">
+                        <p className="text-[10px] text-text-tertiary mb-1 uppercase tracking-wider">
                           Today&apos;s range
                         </p>
                         <p className="text-xs font-semibold text-text-primary tabular-nums truncate">
-                          ₹{dayRange.value}
+                          {dayRange.value}
                         </p>
                       </div>
                     )}
                   </div>
 
-                  {/* CTA */}
-                  <div className="px-5 py-3 bg-surface-secondary/50 flex items-center justify-between">
-                    <span className="text-[11px] text-text-tertiary">
-                      Tap to open
-                    </span>
-                    <svg
-                      width="14"
-                      height="14"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-text-tertiary"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </div>
                 </div>
                 </ViewTransition>
               </motion.div>

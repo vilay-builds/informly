@@ -70,15 +70,17 @@ function liteToCatalog(s: LiteStock): CatalogStock {
       { label: "Volume", value: fmtVolume(s.volume) },
       {
         label: "Day Range",
-        value: s.dayLow && s.dayHigh
-          ? `${s.dayLow.toFixed(2)} – ${s.dayHigh.toFixed(2)}`
-          : "—",
+        value:
+          s.dayLow && s.dayHigh
+            ? `${s.dayLow.toFixed(2)} – ${s.dayHigh.toFixed(2)}`
+            : "—",
       },
       {
         label: "52W Range",
-        value: s.weekLow && s.weekHigh
-          ? `${s.weekLow.toFixed(2)} – ${s.weekHigh.toFixed(2)}`
-          : "—",
+        value:
+          s.weekLow && s.weekHigh
+            ? `${s.weekLow.toFixed(2)} – ${s.weekHigh.toFixed(2)}`
+            : "—",
       },
     ],
     metrics: [],
@@ -97,8 +99,8 @@ function greeting() {
 function todayLabel() {
   return new Date().toLocaleDateString(undefined, {
     weekday: "long",
-    month: "long",
     day: "numeric",
+    month: "long",
   });
 }
 
@@ -139,18 +141,27 @@ export default function HomeView({
   const isEmpty = watched.length === 0;
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-12">
-      {/* Header */}
-      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-2xl lg:max-w-3xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
+    <div className="min-h-screen pb-32">
+      <motion.main
+        variants={stagger(0.06)}
+        initial="hidden"
+        animate="visible"
+        className="max-w-md mx-auto px-5 pt-8 space-y-8"
+      >
+        {/* Header — quiet, no border, no sticky frame */}
+        <motion.header
+          variants={fadeInUp}
+          className="flex items-end justify-between gap-4 pb-1"
+        >
           <div className="min-w-0">
-            <p className="text-xs text-text-tertiary truncate">
+            <p className="text-xs text-text-tertiary mb-1.5">
               {greeting()}
-              {userName && `, ${userName}`} · {todayLabel()}
+              {userName && `, ${userName}`}
             </p>
-            <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)] leading-tight mt-0.5">
+            <h1 className="text-[28px] leading-none font-bold text-text-primary font-[family-name:var(--font-display)]">
               Markets
             </h1>
+            <p className="text-xs text-text-tertiary mt-2">{todayLabel()}</p>
           </div>
           <Link href="/search">
             <IconButton variant="surface" label="Search stocks">
@@ -159,45 +170,36 @@ export default function HomeView({
               </svg>
             </IconButton>
           </Link>
-        </div>
-      </header>
+        </motion.header>
 
-      <motion.main
-        variants={stagger(0.06)}
-        initial="hidden"
-        animate="visible"
-        className="max-w-2xl lg:max-w-3xl mx-auto px-5 pt-6 space-y-8"
-      >
-        {/* Market mood — calm, branded */}
+        {/* Market mood */}
         <motion.section
           variants={fadeInUp}
-          className="rounded-2xl p-5 border bg-gradient-to-br from-primary-50 to-accent-50 border-primary-100/50"
+          className="rounded-3xl p-5 border bg-gradient-to-br from-primary-50 to-accent-50 border-primary-100/40"
         >
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-primary-200/60 text-primary-800">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-primary-200/50 text-primary-800">
               <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
               Market Pulse
             </span>
-            <span className="text-[10px] text-text-tertiary">
-              AI · refreshed every 15 min
-            </span>
           </div>
-          <h2 className="text-base font-bold text-text-primary leading-snug mb-2">
+          <h2 className="text-[15px] font-bold text-text-primary leading-snug mb-1.5">
             {marketSummary.title}
           </h2>
-          <p className="text-sm text-text-secondary leading-relaxed">
+          <p className="text-[13px] text-text-secondary leading-relaxed">
             {marketSummary.explanation}
           </p>
 
-          {/* Inline NIFTY + SENSEX strip */}
           {indices.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-primary-100/60 flex gap-5 overflow-x-auto hide-scrollbar">
-              {indices.slice(0, 4).map((i) => (
-                <div key={i.symbol} className="flex-shrink-0">
-                  <p className="text-[10px] text-text-tertiary mb-0.5">{i.name}</p>
-                  <p className="text-sm font-bold text-text-primary tabular-nums">
+            <div className="mt-4 pt-4 border-t border-primary-100/50 grid grid-cols-3 gap-3">
+              {indices.slice(0, 3).map((i) => (
+                <div key={i.symbol} className="min-w-0">
+                  <p className="text-[10px] text-text-tertiary mb-1 truncate">
+                    {i.name}
+                  </p>
+                  <p className="text-sm font-bold text-text-primary tabular-nums truncate">
                     {i.value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                   </p>
                   <p
@@ -221,15 +223,12 @@ export default function HomeView({
               <h3 className="text-sm font-semibold text-text-primary">
                 Start your watchlist
               </h3>
-              <span className="text-[11px] text-text-tertiary">
-                Tap to add
-              </span>
+              <span className="text-[11px] text-text-tertiary">Tap to add</span>
             </div>
-            <div className="bg-surface rounded-2xl border border-border p-5">
+            <div className="bg-surface rounded-3xl border border-border p-5">
               <p className="text-sm text-text-secondary leading-relaxed mb-4">
                 Pick a few stocks to follow. We&apos;ll show you live prices,
-                charts and beginner-friendly insights for each one — right here
-                on your home screen.
+                charts and beginner-friendly insights right here.
               </p>
               <div className="space-y-2">
                 {STARTER_STOCKS.slice(0, 6).map((s) => {
@@ -238,7 +237,7 @@ export default function HomeView({
                     <button
                       key={s.ticker}
                       onClick={() => toggle(s.ticker)}
-                      className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors border ${
+                      className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-colors border ${
                         watching
                           ? "border-primary-300 bg-primary-50"
                           : "border-border bg-surface-secondary/50 hover:border-border-hover"
@@ -301,7 +300,7 @@ export default function HomeView({
         </motion.div>
       </motion.main>
 
-      <BottomNav active="markets" />
+      <BottomNav />
     </div>
   );
 }

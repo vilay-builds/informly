@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { EmptyState, IconButton } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { fadeInUp, stagger, easing } from "@/lib/motion";
 import { STARTER_STOCKS } from "@/lib/india";
 
@@ -35,7 +35,6 @@ function pushRecent(q: string) {
 }
 
 export default function SearchPage() {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
   const [hits, setHits] = useState<YahooSearchHit[]>([]);
@@ -83,54 +82,53 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col">
-      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-2xl mx-auto px-5 py-3 flex items-center gap-3">
-          <IconButton variant="ghost" size="md" label="Back" onClick={() => router.back()}>
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </IconButton>
-          <div className="flex-1 relative">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && query.trim()) {
-                  pushRecent(query.trim());
-                  setRecent(readRecent());
-                }
-              }}
-              placeholder="Search any Indian stock…"
-              className="w-full bg-surface border border-border rounded-full pl-10 pr-10 py-2.5 text-sm placeholder:text-text-tertiary focus:border-primary-400 outline-none"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-              >
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+    <div className="min-h-[100dvh] flex flex-col pb-32">
+      <main className="flex-1 max-w-md mx-auto w-full px-5 pt-8 space-y-7">
+        <header className="pb-1">
+          <p className="text-xs text-text-tertiary mb-1.5">Find any stock</p>
+          <h1 className="text-[28px] leading-none font-bold text-text-primary font-[family-name:var(--font-display)]">
+            Search
+          </h1>
+        </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-5 py-6 pb-20">
+        <div className="relative">
+          <svg
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && query.trim()) {
+                pushRecent(query.trim());
+                setRecent(readRecent());
+              }
+            }}
+            placeholder="Try Reliance, TCS, ITC…"
+            className="w-full bg-surface border border-border rounded-2xl pl-11 pr-10 py-3 text-sm placeholder:text-text-tertiary focus:border-primary-400 outline-none"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="-mt-1">
         <AnimatePresence mode="wait">
           {!query.trim() ? (
             <motion.div
@@ -254,7 +252,9 @@ export default function SearchPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </main>
+      <BottomNav />
     </div>
   );
 }

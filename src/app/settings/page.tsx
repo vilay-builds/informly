@@ -43,19 +43,17 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen pb-24">
-      <header className="sticky top-0 z-40 glass-strong border-b border-white/30">
-        <div className="max-w-2xl mx-auto px-5 py-4">
-          <p className="text-sm text-text-tertiary">
+    <div className="min-h-screen pb-32">
+      <main className="max-w-md mx-auto px-5 pt-8 space-y-8">
+        <header className="pb-1">
+          <p className="text-xs text-text-tertiary mb-1.5">
             {prefs.name ? `Hi, ${prefs.name.split(" ")[0]}` : "Welcome"}
           </p>
-          <h1 className="text-xl font-bold text-text-primary font-[family-name:var(--font-display)]">
+          <h1 className="text-[28px] leading-none font-bold text-text-primary font-[family-name:var(--font-display)]">
             Settings
           </h1>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-2xl mx-auto px-5 pt-5 space-y-8">
         {/* PROFILE */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
@@ -276,7 +274,7 @@ export default function SettingsPage() {
         </section>
       </main>
 
-      <BottomNav active="you" />
+      <BottomNav />
     </div>
   );
 }

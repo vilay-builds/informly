@@ -13,21 +13,19 @@ function MoverRow({ stock }: { stock: Stock }) {
   return (
     <Link
       href={`/stock/${stock.ticker}`}
-      className="flex items-center justify-between px-3 py-2.5 hover:bg-surface-secondary/50 transition-colors first:rounded-t-2xl last:rounded-b-2xl"
+      className="flex items-center justify-between px-4 py-3 hover:bg-surface-secondary/60 transition-colors"
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-text-primary truncate">
+        <p className="text-[13px] font-semibold text-text-primary truncate">
           {stock.ticker}
         </p>
-        <p className="text-[10px] text-text-tertiary truncate">{stock.name}</p>
+        <p className="text-[10px] text-text-tertiary truncate mt-0.5">
+          {stock.name}
+        </p>
       </div>
       <div className="text-right ml-2">
-        <p className="text-xs font-semibold text-text-primary tabular-nums">
-          {stock.currency}
-          {stock.price.toLocaleString(
-            stock.region === "india" ? "en-IN" : "en-US",
-            { maximumFractionDigits: 0 }
-          )}
+        <p className="text-[12px] font-semibold text-text-primary tabular-nums">
+          ₹{stock.price.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
         </p>
         <p
           className={`text-[11px] font-semibold tabular-nums ${
@@ -50,27 +48,12 @@ export function MoversGrid({ gainers, losers }: MoversGridProps) {
       </h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-success-400/8 border-b border-border">
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="text-success-500"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-              />
-            </svg>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-success-500">
+          <div className="px-4 py-2.5 border-b border-border/40">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-success-500">
               Gainers
             </span>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/40">
             {gainers.length > 0 ? (
               gainers.map((s) => <MoverRow key={s.ticker} stock={s} />)
             ) : (
@@ -82,27 +65,12 @@ export function MoversGrid({ gainers, losers }: MoversGridProps) {
         </div>
 
         <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border-b border-border">
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="text-red-500"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-              />
-            </svg>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-red-500">
+          <div className="px-4 py-2.5 border-b border-border/40">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-red-500">
               Losers
             </span>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/40">
             {losers.length > 0 ? (
               losers.map((s) => <MoverRow key={s.ticker} stock={s} />)
             ) : (

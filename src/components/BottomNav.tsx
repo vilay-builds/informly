@@ -2,9 +2,17 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { tap } from "@/lib/motion";
+import { usePathname } from "next/navigation";
+import { ReactNode } from "react";
 
-const navItems = [
+interface NavItem {
+  label: string;
+  href: string;
+  key: string;
+  icon: ReactNode;
+}
+
+const navItems: NavItem[] = [
   {
     label: "Markets",
     href: "/",
@@ -37,36 +45,73 @@ const navItems = [
   },
 ];
 
-interface BottomNavProps {
-  active?: string;
+const ROUTE_TO_KEY: Record<string, string> = {
+  "/": "markets",
+  "/search": "search",
+  "/settings": "you",
+  "/stock": "markets",
+  "/onboarding": "markets",
+};
+
+function activeKeyFor(pathname: string): string {
+  // Exact match first
+  if (ROUTE_TO_KEY[pathname]) return ROUTE_TO_KEY[pathname];
+  // Prefix match for nested routes
+  for (const [prefix, key] of Object.entries(ROUTE_TO_KEY)) {
+    if (prefix !== "/" && pathname.startsWith(prefix)) return key;
+  }
+  return "markets";
 }
 
-export function BottomNav({ active = "markets" }: BottomNavProps) {
+export function BottomNav() {
+  const pathname = usePathname();
+  const active = activeKeyFor(pathname);
+
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 glass-strong border-t border-white/30 z-50">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav
+      aria-label="Primary"
+      className="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+      style={{
+        // Lift above safe-area on iPhone; on desktop browsers the value
+        // resolves to 0 so the nav still floats 16px from the bottom.
+        bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div
+        className="pointer-events-auto flex items-center gap-1 p-1.5 rounded-full border border-white/40"
+        style={{
+          background: "rgba(255, 255, 255, 0.72)",
+          backdropFilter: "blur(28px) saturate(180%)",
+          WebkitBackdropFilter: "blur(28px) saturate(180%)",
+          boxShadow:
+            "0 18px 48px -12px rgba(20, 25, 60, 0.18), 0 6px 18px -6px rgba(20, 25, 60, 0.10), 0 0 0 1px rgba(255,255,255,0.5) inset",
+        }}
+      >
         {navItems.map((item) => {
           const isActive = item.key === active;
           return (
-            <Link key={item.key} href={item.href}>
-              <motion.div
-                whileTap={tap}
-                className={`relative flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-xl transition-colors ${
-                  isActive
-                    ? "text-primary-600"
-                    : "text-text-tertiary hover:text-text-secondary"
+            <Link
+              key={item.key}
+              href={item.href}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="relative flex flex-col items-center justify-center min-w-[68px] h-11 px-3 rounded-full transition-colors"
+            >
+              {isActive && (
+                <motion.span
+                  layoutId="nav-pill"
+                  className="absolute inset-0 rounded-full bg-primary-500"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  style={{ zIndex: 0 }}
+                />
+              )}
+              <span
+                className={`relative z-10 flex items-center justify-center transition-colors ${
+                  isActive ? "text-white" : "text-text-tertiary"
                 }`}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="bottom-active"
-                    className="absolute -top-1.5 w-1 h-1 rounded-full bg-primary-500"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
                 {item.icon}
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </motion.div>
+              </span>
             </Link>
           );
         })}
