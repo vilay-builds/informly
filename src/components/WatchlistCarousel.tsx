@@ -110,7 +110,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   if (stocks.length === 0) return null;
 
   return (
-    <section className="pb-10">
+    <section className="pb-16">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-primary">
           Your Watchlist
@@ -132,7 +132,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
         </div>
       </div>
 
-      <div className="relative h-[300px]" style={{ perspective: "1200px" }}>
+      <div className="relative h-[320px]" style={{ perspective: "1200px" }}>
         <AnimatePresence initial={false}>
           {stocks.map((stock, i) => {
             const offset = i - index;
@@ -243,12 +243,16 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                     </div>
                   </div>
 
-                  {/* Sparkline — fills the middle */}
-                  <div className="flex-1 px-1 pb-1 relative min-h-[80px]">
-                    <Sparkline data={data} isPositive={isPositive} height={110} />
-                    <span className="absolute right-5 top-2 text-[10px] text-text-tertiary font-medium">
-                      Last 30 days
-                    </span>
+                  {/* Sparkline section */}
+                  <div className="px-5 pb-1">
+                    <div className="flex items-center justify-end mb-1">
+                      <span className="text-[9px] text-text-tertiary uppercase tracking-wider">
+                        Last 30 days
+                      </span>
+                    </div>
+                    <div className="flex-1 -mx-2 min-h-[90px]">
+                      <Sparkline data={data} isPositive={isPositive} height={100} />
+                    </div>
                   </div>
 
                   {/* Beginner-friendly facts */}
@@ -288,7 +292,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.55 }}
             transition={{ delay: 0.6 }}
-            className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[10px] text-text-tertiary pointer-events-none"
+            className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[10px] text-text-tertiary pointer-events-none whitespace-nowrap"
           >
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />

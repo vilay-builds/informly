@@ -4,8 +4,11 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserPreferences } from "@/lib/userPreferences";
 import { CommandPalette } from "@/components/CommandPalette";
+import { StockTicker } from "@/components/StockTicker";
 
 const STANDALONE_ROUTES = ["/onboarding"];
+// Routes where the rolling ticker fits naturally above content.
+const TICKER_ROUTES = ["/", "/stock"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -24,11 +27,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  // Mobile-first: the entire experience is a single column, centered on
-  // wider screens with generous margins — no sidebar, no scaled-up
-  // dashboard. Desktop = same mobile column, comfortably centered.
+  const showTicker = TICKER_ROUTES.some((r) =>
+    r === "/" ? pathname === "/" : pathname.startsWith(r)
+  );
+
   return (
     <>
+      {showTicker && <StockTicker />}
       {children}
       <CommandPalette />
     </>

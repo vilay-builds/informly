@@ -195,8 +195,12 @@ export default function HomeView({
           {indices.length > 0 && (
             <div className="mt-4 pt-4 border-t border-primary-100/50 grid grid-cols-3 gap-3">
               {indices.slice(0, 3).map((i) => (
-                <div key={i.symbol} className="min-w-0">
-                  <p className="text-[10px] text-text-tertiary mb-1 truncate">
+                <Link
+                  key={i.symbol}
+                  href={`/stock/${encodeURIComponent(i.symbol)}`}
+                  className="min-w-0 group rounded-lg -mx-1 px-1 py-1 hover:bg-primary-100/30 transition-colors"
+                >
+                  <p className="text-[10px] text-text-tertiary mb-1 truncate group-hover:text-text-secondary">
                     {i.name}
                   </p>
                   <p className="text-sm font-bold text-text-primary tabular-nums truncate">
@@ -210,7 +214,7 @@ export default function HomeView({
                     {i.changePercent >= 0 ? "+" : ""}
                     {i.changePercent.toFixed(2)}%
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}

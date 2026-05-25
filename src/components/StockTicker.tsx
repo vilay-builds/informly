@@ -69,17 +69,24 @@ export function StockTicker({ speed = 60 }: StockTickerProps) {
 
   if (items.length === 0) {
     return (
-      <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
-        <div className="text-xs text-text-tertiary text-center">Loading prices…</div>
+      <div className="relative overflow-hidden bg-surface/50 py-2">
+        <div className="text-[11px] text-text-tertiary text-center">
+          Loading prices…
+        </div>
       </div>
     );
   }
 
-  // Triple-loop so wrap is seamless
   const loop = [...items, ...items, ...items];
 
   return (
-    <div className="relative overflow-hidden glass border-b border-white/30 py-2.5">
+    <div
+      className="relative overflow-hidden py-2"
+      style={{
+        background:
+          "linear-gradient(to bottom, color-mix(in srgb, var(--color-surface) 96%, transparent), color-mix(in srgb, var(--color-surface) 88%, transparent))",
+      }}
+    >
       <motion.div
         ref={trackEl}
         className="flex gap-6 whitespace-nowrap cursor-grab active:cursor-grabbing"
@@ -118,8 +125,20 @@ export function StockTicker({ speed = 60 }: StockTickerProps) {
         ))}
       </motion.div>
 
-      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white/60 to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white/60 to-transparent pointer-events-none" />
+      <div
+        className="absolute inset-y-0 left-0 w-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to right, var(--color-background), transparent)",
+        }}
+      />
+      <div
+        className="absolute inset-y-0 right-0 w-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to left, var(--color-background), transparent)",
+        }}
+      />
     </div>
   );
 }

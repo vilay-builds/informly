@@ -78,23 +78,50 @@ function formatCompactNumber(n: number | null | undefined): number | null {
 }
 
 /**
- * Try both US and India listings to resolve a free-form ticker.
- * Returns whichever returns first with a valid price.
+ * Resolve a free-form ticker to a live quote, India-first.
+ *
+ * The platform is India-focused, so plain tickers like INFY / TCS /
+ * RELIANCE are resolved against NSE first. Without this, Yahoo would
+ * happily return a US listing with the same root ticker (Reliance Steel,
+ * etc.), causing the wrong currency and price to appear.
+ *
+ * Indices (^-prefixed) and explicitly suffixed symbols (.NS / .BO) keep
+ * their semantics.
  */
 export async function resolveQuote(
   ticker: string
 ): Promise<{ quote: LiveStock; region: "us" | "india" } | null> {
   const t = ticker.toUpperCase();
-  // Explicit suffixes win
+
+  // Explicit India suffix
   if (t.endsWith(".NS") || t.endsWith(".BO")) {
     const q = await fetchStockQuote(t.replace(/\.(NS|BO)$/, ""), "india");
     return q ? { quote: q, region: "india" } : null;
   }
-  // Try US first (most common); if not found, try India
-  const us = await fetchStockQuote(t, "us");
-  if (us) return { quote: us, region: "us" };
+
+  // Index symbols (^...) — try Yahoo directly first; the result usually
+  // has no INR/USD currency since indices are unitless. We normalise the
+  // currency to ₹ when the symbol looks Indian.
+  if (t.startsWith("^")) {
+    const q = await fetchStockQuote(t, "us"); // toYahooSymbol passes ^ through unchanged
+    if (q) {
+      const isIndianIndex = /^\^(NSE|BSE|CNX|INDIA)/.test(t);
+      return {
+        quote: { ...q, currency: isIndianIndex ? "₹" : q.currency, region: isIndianIndex ? "india" : q.region },
+        region: isIndianIndex ? "india" : q.region,
+      };
+    }
+    return null;
+  }
+
+  // India-first for plain tickers
   const india = await fetchStockQuote(t, "india");
   if (india) return { quote: india, region: "india" };
+
+  // Fallback: US listing
+  const us = await fetchStockQuote(t, "us");
+  if (us) return { quote: us, region: "us" };
+
   return null;
 }
 
