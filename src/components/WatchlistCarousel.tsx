@@ -196,8 +196,8 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                         "0 24px 56px -16px rgba(0,0,0,0.18), 0 6px 16px -6px rgba(0,0,0,0.08)",
                     }}
                   >
-                  {/* Header */}
-                  <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+                  {/* Header — ticker + name left, signal & fact pills right */}
+                  <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-base font-bold text-text-primary tracking-tight">
@@ -211,73 +211,56 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                         {stock.name}
                       </p>
                     </div>
-                    <span
-                      className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                        stock.signal === "bullish"
-                          ? "bg-success-400/15 text-success-500"
-                          : stock.signal === "bearish"
-                            ? "bg-red-100 text-red-500"
-                            : "bg-yellow-100 text-yellow-600"
-                      }`}
-                    >
-                      {signalLabel[stock.signal]}
-                    </span>
-                  </div>
-
-                  {/* Price + change */}
-                  <div className="px-5 pb-3 flex items-end justify-between">
-                    <div>
-                      <p className="text-[32px] leading-none font-bold text-text-primary tracking-tight tabular-nums">
-                        <span className="text-base text-text-tertiary mr-1 align-baseline">
-                          ₹
-                        </span>
-                        {formatPrice(stock.price)}
-                      </p>
-                      <p
-                        className={`text-sm font-semibold tabular-nums mt-1.5 ${
-                          isPositive ? "text-success-500" : "text-red-500"
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span
+                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                          stock.signal === "bullish"
+                            ? "bg-success-400/15 text-success-500"
+                            : stock.signal === "bearish"
+                              ? "bg-red-100 text-red-500"
+                              : "bg-yellow-100 text-yellow-600"
                         }`}
                       >
-                        {isPositive ? "▲" : "▼"} {Math.abs(stock.change)}% today
-                      </p>
+                        {signalLabel[stock.signal]}
+                      </span>
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-text-secondary whitespace-nowrap">
+                        {tier.label}
+                      </span>
+                      {dayRange && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-text-secondary whitespace-nowrap tabular-nums">
+                          ₹{dayRange.value}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Sparkline section */}
-                  <div className="px-5 pb-1">
-                    <div className="flex items-center justify-end mb-1">
+                  {/* Price + change */}
+                  <div className="px-5 pb-2">
+                    <p className="text-[34px] leading-none font-bold text-text-primary tracking-tight tabular-nums">
+                      <span className="text-base text-text-tertiary mr-1 align-baseline">
+                        ₹
+                      </span>
+                      {formatPrice(stock.price)}
+                    </p>
+                    <p
+                      className={`text-sm font-semibold tabular-nums mt-1.5 ${
+                        isPositive ? "text-success-500" : "text-red-500"
+                      }`}
+                    >
+                      {isPositive ? "▲" : "▼"} {Math.abs(stock.change)}% today
+                    </p>
+                  </div>
+
+                  {/* Sparkline fills the rest of the card */}
+                  <div className="flex-1 px-5 pt-3 pb-5 flex flex-col justify-end">
+                    <div className="flex items-center justify-end mb-1.5">
                       <span className="text-[9px] text-text-tertiary uppercase tracking-wider">
                         Last 30 days
                       </span>
                     </div>
-                    <div className="flex-1 -mx-2 min-h-[90px]">
-                      <Sparkline data={data} isPositive={isPositive} height={100} />
+                    <div className="-mx-2">
+                      <Sparkline data={data} isPositive={isPositive} height={110} />
                     </div>
-                  </div>
-
-                  {/* Beginner-friendly facts */}
-                  <div className="px-5 py-4 border-t border-border/40 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-text-tertiary mb-1 uppercase tracking-wider">
-                        Size
-                      </p>
-                      <p className="text-xs font-semibold text-text-primary truncate">
-                        {tier.label}
-                      </p>
-                      <p className="text-[11px] text-text-tertiary tabular-nums truncate">
-                        {friendlyCap}
-                      </p>
-                    </div>
-                    {dayRange && (
-                      <div className="text-right min-w-0">
-                        <p className="text-[10px] text-text-tertiary mb-1 uppercase tracking-wider">
-                          Today&apos;s range
-                        </p>
-                        <p className="text-xs font-semibold text-text-primary tabular-nums truncate">
-                          {dayRange.value}
-                        </p>
-                      </div>
-                    )}
                   </div>
 
                 </div>

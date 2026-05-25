@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, Reorder } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const { themeKey, setThemeKey } = useTheme();
   const { prefs, reset } = useUserPreferences();
   const { prefs: notifPrefs, setPref } = useNotificationPrefs();
-  const { list: watchlist, remove } = useWatchlist("india");
+  const { list: watchlist, remove, reorder } = useWatchlist("india");
   const toast = useToast();
 
   const handleResetOnboarding = () => {
@@ -159,38 +159,72 @@ export default function SettingsPage() {
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             Your Watchlist
           </h3>
-          <div className="bg-surface rounded-2xl p-4 border border-border">
-            <p className="text-xs text-text-secondary mb-4">
-              Stocks you&apos;re following. Tap the chip to remove.
-            </p>
+          <div className="bg-surface rounded-2xl p-2 border border-border">
             {watchlist.length === 0 ? (
               <Link
                 href="/search"
-                className="block text-center py-4 text-xs text-primary-600 font-medium"
+                className="block text-center py-4 px-3 text-xs text-primary-600 font-medium"
               >
                 Search and star any stock to add it
               </Link>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {watchlist.map((ticker) => (
-                  <button
-                    key={ticker}
-                    onClick={() => {
-                      remove(ticker);
-                      toast.show({
-                        message: `${ticker} removed from watchlist`,
-                        variant: "success",
-                      });
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-surface-secondary text-text-primary border border-border hover:border-red-300 hover:text-red-600 transition-colors"
-                  >
-                    {ticker}
-                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                ))}
-              </div>
+              <>
+                <p className="text-[11px] text-text-secondary px-3 pt-2 pb-2">
+                  Drag to reorder. Tap × to remove.
+                </p>
+                <Reorder.Group
+                  axis="y"
+                  values={watchlist}
+                  onReorder={reorder}
+                  className="space-y-1"
+                >
+                  {watchlist.map((ticker, idx) => (
+                    <Reorder.Item
+                      key={ticker}
+                      value={ticker}
+                      whileDrag={{
+                        scale: 1.02,
+                        boxShadow: "0 10px 30px -8px rgba(0,0,0,0.15)",
+                      }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-secondary border border-border cursor-grab active:cursor-grabbing select-none"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="text-text-tertiary flex-shrink-0"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      <span className="text-[10px] text-text-tertiary tabular-nums w-4 flex-shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span className="text-sm font-semibold text-text-primary flex-1 truncate">
+                        {ticker}
+                      </span>
+                      <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => {
+                          remove(ticker);
+                          toast.show({
+                            message: `${ticker} removed from watchlist`,
+                            variant: "success",
+                          });
+                        }}
+                        aria-label={`Remove ${ticker}`}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-tertiary hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </Reorder.Item>
+                  ))}
+                </Reorder.Group>
+              </>
             )}
           </div>
         </section>

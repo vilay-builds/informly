@@ -106,7 +106,15 @@ export function useWatchlist(region: "us" | "india" = "india") {
     [region, update]
   );
 
-  return { list, isWatched, add, remove, toggle };
+  const reorder = useCallback(
+    (next: string[]) => {
+      const cleaned = next.map((t) => t.toUpperCase());
+      update((prev) => ({ ...prev, [region]: cleaned }));
+    },
+    [region, update]
+  );
+
+  return { list, isWatched, add, remove, toggle, reorder };
 }
 
 // ============ NOTIFICATIONS ============

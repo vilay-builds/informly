@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useUserPreferences } from "@/lib/userPreferences";
@@ -105,7 +105,7 @@ function todayLabel() {
 }
 
 export default function HomeView({
-  stocks,
+  stocks: serverStocks,
   marketSummary,
   indices,
 }: HomeViewProps) {
@@ -113,10 +113,57 @@ export default function HomeView({
   const { list: watchlist, toggle } = useWatchlist("india");
   const userName = prefs.name?.split(" ")[0] || "";
 
-  const watched = useMemo(
-    () => stocks.filter((s) => watchlist.includes(s.ticker)),
-    [stocks, watchlist]
+  // Fetch quotes for watchlist tickers that aren't in the curated pool
+  // so users can star ANY Indian stock and see it on home.
+  const [extras, setExtras] = useState<LiteStock[]>([]);
+  const knownTickers = useMemo(
+    () => new Set([...serverStocks.map((s) => s.ticker), ...extras.map((s) => s.ticker)]),
+    [serverStocks, extras]
   );
+  const missing = useMemo(
+    () => watchlist.filter((t) => !knownTickers.has(t)),
+    [watchlist, knownTickers]
+  );
+
+  useEffect(() => {
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/stocks?tickers=${encodeURIComponent(missing.join(","))}`
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as { stocks: LiteStock[] };
+        if (cancelled) return;
+        setExtras((prev) => {
+          const merged = [...prev];
+          for (const s of data.stocks) {
+            if (!merged.some((m) => m.ticker === s.ticker)) merged.push(s);
+          }
+          return merged;
+        });
+      } catch {
+        // silent — missing stocks simply stay unrendered
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [missing.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stocks = useMemo(
+    () => [...serverStocks, ...extras],
+    [serverStocks, extras]
+  );
+
+  // Preserve user's watchlist ORDER (not the alphabetical pool order)
+  const watched = useMemo(() => {
+    const byTicker = new Map(stocks.map((s) => [s.ticker, s]));
+    return watchlist
+      .map((t) => byTicker.get(t))
+      .filter((s): s is LiteStock => Boolean(s));
+  }, [stocks, watchlist]);
   const carouselStocks = watched.map(liteToCatalog);
 
   const gainers = useMemo(
