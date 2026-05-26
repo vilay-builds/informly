@@ -93,17 +93,27 @@ export interface StockViewData {
 const TERM_FIT_META = {
   short: {
     label: "Short term",
-    range: "weeks to a few months",
+    range: "Weeks to a few months",
     color: "text-orange-600",
     bg: "bg-orange-50",
     border: "border-orange-200",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
   },
   mid: {
     label: "Mid term",
-    range: "6 months – 2 years",
+    range: "6 months to about 2 years",
     color: "text-blue-600",
     bg: "bg-blue-50",
     border: "border-blue-200",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
   },
   long: {
     label: "Long term",
@@ -111,21 +121,75 @@ const TERM_FIT_META = {
     color: "text-emerald-600",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
   },
   any: {
-    label: "Any horizon",
-    range: "flexible",
+    label: "Flexible",
+    range: "Works across timeframes",
     color: "text-text-secondary",
     bg: "bg-surface-secondary",
     border: "border-border",
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+    ),
   },
 };
 
 const BEGINNER_META = {
-  yes: { label: "Beginner-friendly", color: "text-success-500", bg: "bg-success-400/15", border: "border-success-400/30" },
-  maybe: { label: "Approach with care", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" },
-  wait: { label: "Wait & learn first", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
-  avoid: { label: "Not for beginners", color: "text-red-500", bg: "bg-red-50", border: "border-red-200" },
+  yes: {
+    label: "Good starting point",
+    sublabel: "This stock is approachable for a new investor",
+    color: "text-success-500",
+    bg: "bg-success-400/15",
+    border: "border-success-400/30",
+    icon: (
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  maybe: {
+    label: "Worth exploring, with homework",
+    sublabel: "Do some reading before you commit",
+    color: "text-yellow-600",
+    bg: "bg-yellow-50",
+    border: "border-yellow-200",
+    icon: (
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+    ),
+  },
+  wait: {
+    label: "Not the right time",
+    sublabel: "Better to watch and learn before entering",
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    icon: (
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  avoid: {
+    label: "Skip this one for now",
+    sublabel: "Too risky or complex for a new investor",
+    color: "text-red-500",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    icon: (
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+      </svg>
+    ),
+  },
 };
 
 function formatPriceFull(p: number, currency: "$" | "₹"): string {
@@ -409,15 +473,251 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </motion.div>
         )}
 
-        {/* Market stats */}
+        {/* ─── GUIDED NARRATIVE: "Should I invest?" ─── */}
+
+        {/* Section 1: The Signal — what's the vibe right now? */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          className={`rounded-2xl overflow-hidden border ${signal.border}`}
+        >
+          <div className={`px-5 py-4 ${signal.bg}`}>
+            <div className="flex items-center gap-2.5">
+              <span className={signal.color}>{signal.icon}</span>
+              <div>
+                <h3 className={`text-sm font-bold ${signal.color}`}>
+                  {signal.label}
+                </h3>
+                <p className="text-[11px] text-text-tertiary mt-0.5">
+                  Current momentum based on price, fundamentals, and news
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-4 bg-surface">
+            <p className="text-sm text-text-secondary leading-relaxed">
+              {stock.signalReason}
+            </p>
+          </div>
+        </motion.section>
+
+        {/* Section 2: Is this stock right for you? (Beginner verdict — the key question) */}
+        {(() => {
+          const bm = BEGINNER_META[stock.beginnerVerdict];
+          return (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`rounded-2xl overflow-hidden border ${bm.border}`}
+            >
+              <div className={`px-5 py-4 ${bm.bg}`}>
+                <div className="flex items-center gap-2.5">
+                  <span className={bm.color}>{bm.icon}</span>
+                  <div>
+                    <h3 className={`text-sm font-bold ${bm.color}`}>
+                      {bm.label}
+                    </h3>
+                    <p className="text-[11px] text-text-tertiary mt-0.5">
+                      {bm.sublabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 py-4 bg-surface">
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {stock.beginnerVerdictReason}
+                </p>
+              </div>
+            </motion.section>
+          );
+        })()}
+
+        {/* Section 3: How long should you hold? (Term fit) */}
+        {(() => {
+          const tm = TERM_FIT_META[stock.termFit];
+          return (
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.24 }}
+              className="bg-surface rounded-2xl p-5 border border-border"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-3">
+                How long should you hold?
+              </p>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className={`w-8 h-8 rounded-lg ${tm.bg} ${tm.border} border flex items-center justify-center ${tm.color}`}>
+                  {tm.icon}
+                </div>
+                <div>
+                  <h3 className={`text-sm font-bold ${tm.color}`}>
+                    {tm.label}
+                  </h3>
+                  <p className="text-[11px] text-text-tertiary">
+                    {tm.range}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                {stock.termFitReason}
+              </p>
+            </motion.section>
+          );
+        })()}
+
+        {/* Section 4: What's working + What to watch (side by side) */}
+        {(stock.whyBuying.length > 0 || stock.whyAvoiding.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28 }}
+            className="space-y-3"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+              Both sides of the story
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {stock.whyBuying.length > 0 && (
+                <div className="bg-surface rounded-2xl p-5 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-success-400/15 flex items-center justify-center text-success-500">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-text-primary">
+                      {"What's working"}
+                    </h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {stock.whyBuying.map((reason, i) => (
+                      <li
+                        key={i}
+                        className="text-[13px] text-text-secondary leading-relaxed pl-3 border-l-2 border-success-400/40"
+                      >
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {stock.whyAvoiding.length > 0 && (
+                <div className="bg-surface rounded-2xl p-5 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-text-primary">
+                      What to watch out for
+                    </h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {stock.whyAvoiding.map((reason, i) => (
+                      <li
+                        key={i}
+                        className="text-[13px] text-text-secondary leading-relaxed pl-3 border-l-2 border-red-300/50"
+                      >
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Section 5: Understanding the numbers (Key Metrics — teaching section) */}
+        {stock.metrics.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 }}
+          >
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-text-primary">
+                Understanding the numbers
+              </h3>
+              <p className="text-[11px] text-text-tertiary mt-0.5">
+                Tap any metric to learn what it means and how to use it
+              </p>
+            </div>
+            <div className="space-y-2">
+              {stock.metrics.map((metric, i) => {
+                const isNA = metric.value === "N/A" || metric.value === "—";
+                return (
+                  <motion.div
+                    key={metric.label}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.34 + i * 0.03 }}
+                    className="bg-surface rounded-xl border border-border overflow-hidden cursor-pointer active:scale-[0.995] transition-transform"
+                    onClick={() => setExpandedMetric(expandedMetric === i ? null : i)}
+                  >
+                    <div className="flex items-center justify-between p-4">
+                      <span className="text-sm text-text-secondary">{metric.label}</span>
+                      <div className="flex items-center gap-2.5">
+                        <span className={`text-sm font-bold tabular-nums ${isNA ? "text-text-tertiary" : "text-text-primary"}`}>
+                          {metric.value}
+                        </span>
+                        <motion.div
+                          animate={{ rotate: expandedMetric === i ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="w-5 h-5 rounded-full bg-surface-secondary flex items-center justify-center"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            className="text-text-tertiary"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </motion.div>
+                      </div>
+                    </div>
+                    <AnimatePresence initial={false}>
+                      {expandedMetric === i && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4">
+                            <div className="pt-3 border-t border-border">
+                              <p className="text-[13px] text-text-secondary leading-relaxed">
+                                {metric.explanation}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Section 6: Market stats (quick reference grid) */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
           className="bg-surface rounded-2xl p-5 border border-border"
         >
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">
-            Market Stats
+          <h3 className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">
+            Market snapshot
           </h3>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3.5">
             {stock.stats.map((stat) => (
@@ -431,217 +731,46 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </div>
         </motion.section>
 
-        {/* Signal */}
+        {/* Section 7: About the company */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className={`rounded-2xl p-5 border ${signal.bg} ${signal.border}`}
+          transition={{ delay: 0.4 }}
+          className="bg-surface rounded-2xl p-5 border border-border"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <span className={signal.color}>{signal.icon}</span>
-            <h3 className={`text-sm font-bold ${signal.color}`}>{signal.label}</h3>
-          </div>
-          <p className="text-sm text-text-secondary leading-relaxed">
-            {stock.signalReason}
-          </p>
-        </motion.section>
-
-        {/* TERM FIT + BEGINNER VERDICT — side by side on desktop */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-3"
-        >
-          {/* Term Fit */}
-          {(() => {
-            const m = TERM_FIT_META[stock.termFit];
-            return (
-              <div className={`rounded-2xl p-5 border ${m.bg} ${m.border}`}>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-2">
-                  Best-fit horizon
-                </p>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <h3 className={`text-base font-bold ${m.color}`}>
-                    {m.label}
-                  </h3>
-                  <span className="text-[11px] text-text-tertiary">
-                    ({m.range})
-                  </span>
-                </div>
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {stock.termFitReason}
-                </p>
-              </div>
-            );
-          })()}
-
-          {/* Beginner Verdict */}
-          {(() => {
-            const m = BEGINNER_META[stock.beginnerVerdict];
-            return (
-              <div className={`rounded-2xl p-5 border ${m.bg} ${m.border}`}>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary mb-2">
-                  For a beginner?
-                </p>
-                <h3 className={`text-base font-bold ${m.color} mb-2`}>
-                  {m.label}
-                </h3>
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {stock.beginnerVerdictReason}
-                </p>
-              </div>
-            );
-          })()}
-        </motion.div>
-
-        {/* WHY BUYING / WHY AVOIDING */}
-        {(stock.whyBuying.length > 0 || stock.whyAvoiding.length > 0) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.24 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-3"
-          >
-            {stock.whyBuying.length > 0 && (
-              <div className="bg-surface rounded-2xl p-5 border border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 rounded-full bg-success-400/20 flex items-center justify-center text-success-500">
-                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-semibold text-text-primary">
-                    Why people are buying
-                  </h3>
-                </div>
-                <ul className="space-y-2">
-                  {stock.whyBuying.map((reason, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-text-secondary leading-relaxed flex gap-2"
-                    >
-                      <span className="text-success-500 flex-shrink-0">·</span>
-                      {reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {stock.whyAvoiding.length > 0 && (
-              <div className="bg-surface rounded-2xl p-5 border border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-500">
-                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.48 0L3.16 16.25A2 2 0 005 19z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-semibold text-text-primary">
-                    Risks to watch
-                  </h3>
-                </div>
-                <ul className="space-y-2">
-                  {stock.whyAvoiding.map((reason, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-text-secondary leading-relaxed flex gap-2"
-                    >
-                      <span className="text-red-500 flex-shrink-0">·</span>
-                      {reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* About */}
-        <section className="bg-surface rounded-2xl p-5 border border-border">
           <h3 className="text-sm font-semibold text-text-primary mb-2">
             What does {stock.name} do?
           </h3>
           <p className="text-sm text-text-secondary leading-relaxed">
             {stock.about}
           </p>
-        </section>
+        </motion.section>
 
-        {/* Metrics */}
-        {stock.metrics.length > 0 && (
-          <section>
-            <h3 className="text-sm font-semibold text-text-primary mb-3">
-              Key Metrics — Tap to understand
-            </h3>
-            <div className="space-y-2">
-              {stock.metrics.map((metric, i) => (
-                <motion.div
-                  key={metric.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + i * 0.04 }}
-                  className="bg-surface rounded-xl border border-border overflow-hidden cursor-pointer"
-                  onClick={() => setExpandedMetric(expandedMetric === i ? null : i)}
-                >
-                  <div className="flex items-center justify-between p-4">
-                    <span className="text-sm text-text-secondary">{metric.label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-text-primary tabular-nums">
-                        {metric.value}
-                      </span>
-                      <motion.svg
-                        width="14"
-                        height="14"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-text-tertiary"
-                        animate={{ rotate: expandedMetric === i ? 180 : 0 }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </motion.svg>
-                    </div>
-                  </div>
-                  <AnimatePresence initial={false}>
-                    {expandedMetric === i && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-4">
-                          <div className="pt-3 border-t border-border">
-                            <p className="text-xs text-text-secondary leading-relaxed">
-                              {metric.explanation}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Analyst */}
-        <section className="bg-primary-50 rounded-2xl p-5 border border-primary-100">
+        {/* Section 8: What analysts think */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.42 }}
+          className="bg-primary-50 rounded-2xl p-5 border border-primary-100"
+        >
           <h3 className="text-sm font-semibold text-primary-700 mb-2">
-            What Analysts Are Saying
+            What analysts think
           </h3>
           <p className="text-sm text-primary-800 leading-relaxed">
             {stock.analystSummary}
           </p>
-        </section>
+        </motion.section>
 
-        {/* News */}
+        {/* Section 9: Latest news */}
         {stock.news.length > 0 && (
-          <section className="pb-6">
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.44 }}
+            className="pb-6"
+          >
             <h3 className="text-sm font-semibold text-text-primary mb-3">
-              Latest News
+              In the news
             </h3>
             <div className="space-y-2">
               {stock.news.map((item, i) => (
@@ -666,7 +795,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
                 </a>
               ))}
             </div>
-          </section>
+          </motion.section>
         )}
       </main>
     </div>

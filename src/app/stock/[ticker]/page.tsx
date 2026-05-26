@@ -41,6 +41,7 @@ export default async function StockPage({
     dividendYield: quote.dividendYield,
     weekHigh: quote.weekHigh,
     weekLow: quote.weekLow,
+    volume: quote.volume,
     recentNewsTitles: news.slice(0, 3).map((n) => n.title),
   });
 
@@ -75,7 +76,7 @@ export default async function StockPage({
   ];
 
   const metricList = [
-    { label: "P/E Ratio", value: quote.peRatio?.toFixed(2) ?? "—" },
+    { label: "P/E Ratio", value: quote.peRatio?.toFixed(2) ?? "N/A" },
     {
       label: "Market Cap",
       value: formatCompact(quote.marketCap, quote.currency),
@@ -85,11 +86,27 @@ export default async function StockPage({
       value:
         quote.weekLow && quote.weekHigh
           ? `${quote.weekLow.toFixed(2)} – ${quote.weekHigh.toFixed(2)}`
-          : "—",
+          : "N/A",
     },
     {
       label: "Day Change",
       value: `${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%`,
+    },
+    {
+      label: "Dividend Yield",
+      value: quote.dividendYield != null
+        ? `${(quote.dividendYield * 100).toFixed(2)}%`
+        : "N/A",
+    },
+    {
+      label: "Volume",
+      value: quote.volume != null
+        ? quote.volume >= 1e7
+          ? `${(quote.volume / 1e7).toFixed(2)} Cr`
+          : quote.volume >= 1e5
+            ? `${(quote.volume / 1e5).toFixed(2)} L`
+            : quote.volume.toLocaleString("en-IN")
+        : "N/A",
     },
   ];
 
