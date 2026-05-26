@@ -37,23 +37,36 @@ export function PremiumChart({
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const [resolved, setResolved] = useState(false);
 
-  // Read theme colors from CSS variables so the chart matches Nova's palette
+  // Read theme colors from CSS variables so the chart matches Vero's palette
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
 
     const styles = getComputedStyle(document.documentElement);
-    const primary = styles.getPropertyValue("--color-primary-600").trim();
+    const primary600 = styles.getPropertyValue("--color-primary-600").trim();
+    const primary500 = styles.getPropertyValue("--color-primary-500").trim();
     const textTertiary = styles.getPropertyValue("--color-text-tertiary").trim();
     const surface = styles.getPropertyValue("--color-surface").trim();
 
-    const upColor = "#16a34a";
+    // Use the theme's primary color for positive charts, red for negative
+    const upColor = primary600 || "#16a34a";
     const downColor = "#dc2626";
     const lineColor = isPositive ? upColor : downColor;
+
+    // Parse the color for alpha variants
+    function hexToRgba(hex: string, alpha: number): string {
+      const clean = hex.replace("#", "");
+      if (clean.length !== 6) return `rgba(128, 128, 128, ${alpha})`;
+      const r = parseInt(clean.slice(0, 2), 16);
+      const g = parseInt(clean.slice(2, 4), 16);
+      const b = parseInt(clean.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     const topFill = isPositive
-      ? "rgba(22, 163, 74, 0.22)"
+      ? hexToRgba(upColor, 0.22)
       : "rgba(220, 38, 38, 0.22)";
     const bottomFill = isPositive
-      ? "rgba(22, 163, 74, 0)"
+      ? hexToRgba(upColor, 0)
       : "rgba(220, 38, 38, 0)";
 
     const chart = createChart(containerRef.current, {

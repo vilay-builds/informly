@@ -18,19 +18,26 @@ const comingSoon = Coming_Soon({
 });
 
 export const metadata: Metadata = {
-  title: "Nova — News that makes sense",
+  title: "Vero — The calm way to follow stocks",
   description:
-    "A calm, AI-powered companion for understanding world events and financial markets.",
+    "A calm, AI-powered companion for understanding Indian stock markets. Built for beginners.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Nova",
+    title: "Vero",
   },
 };
 
 export const viewport = {
-  themeColor: "#5b6ef2",
+  themeColor: "#9b7ec8",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

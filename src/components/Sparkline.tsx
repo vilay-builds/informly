@@ -7,6 +7,8 @@ interface SparklineProps {
   isPositive: boolean;
   height?: number;
   className?: string;
+  /** Override the positive color with the theme primary */
+  themeColor?: string;
 }
 
 /**
@@ -19,6 +21,7 @@ export function Sparkline({
   isPositive,
   height = 64,
   className = "",
+  themeColor,
 }: SparklineProps) {
   const { pathD, fillD } = useMemo(() => {
     if (data.length === 0) return { pathD: "", fillD: "" };
@@ -74,7 +77,7 @@ export function Sparkline({
     return { pathD: d, fillD: `${d} L 100 100 L 0 100 Z` };
   }, [data]);
 
-  const color = isPositive ? "#16a34a" : "#dc2626";
+  const color = isPositive ? (themeColor || "#16a34a") : "#dc2626";
   const gradId = `spark-${isPositive ? "u" : "d"}-${Math.random().toString(36).slice(2, 7)}`;
 
   return (

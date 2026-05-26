@@ -7,29 +7,17 @@ import { BottomNav } from "@/components/BottomNav";
 import { useTheme } from "@/components/ThemeProvider";
 import { themeList } from "@/lib/themes";
 import { useUserPreferences } from "@/lib/userPreferences";
-import {
-  useNotificationPrefs,
-  useWatchlist,
-  NotificationPrefs,
-} from "@/lib/persistence";
+import { useWatchlist } from "@/lib/persistence";
 import { useToast } from "@/components/Toast";
-
-const NOTIFICATION_OPTIONS: {
-  key: keyof NotificationPrefs;
-  label: string;
-  desc: string;
-}[] = [
-  { key: "marketAlerts", label: "Market alerts", desc: "When your stocks move significantly" },
-  { key: "weeklyDigest", label: "Weekly digest", desc: "What moved on your watchlist this week" },
-];
+import { useTickerPreference } from "@/lib/persistence";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { themeKey, setThemeKey } = useTheme();
   const { prefs, reset } = useUserPreferences();
-  const { prefs: notifPrefs, setPref } = useNotificationPrefs();
   const { list: watchlist, remove, reorder } = useWatchlist("india");
   const toast = useToast();
+  const { enabled: tickerEnabled, setEnabled: setTickerEnabled } = useTickerPreference();
 
   const handleResetOnboarding = () => {
     if (
@@ -63,7 +51,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-4 p-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                 <span className="text-xl font-bold text-white">
-                  {(prefs.name?.[0] || "N").toUpperCase()}
+                  {(prefs.name?.[0] || "V").toUpperCase()}
                 </span>
               </div>
               <div className="flex-1">
@@ -154,6 +142,41 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* PREFERENCES */}
+        <section>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            Preferences
+          </h3>
+          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+            <button
+              onClick={() => setTickerEnabled(!tickerEnabled)}
+              className="w-full flex items-center justify-between p-4 hover:bg-surface-secondary/40 transition-colors"
+            >
+              <div className="text-left">
+                <p className="text-sm font-medium text-text-primary">
+                  Rolling price ticker
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  Scrolling stock prices at the top of the screen
+                </p>
+              </div>
+              <div
+                className={`w-11 h-6 rounded-full relative transition-colors ${
+                  tickerEnabled ? "bg-primary-500" : "bg-surface-secondary"
+                }`}
+              >
+                <motion.div
+                  layout
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm ${
+                    tickerEnabled ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
+        </section>
+
         {/* WATCHLIST */}
         <section>
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
@@ -170,7 +193,7 @@ export default function SettingsPage() {
             ) : (
               <>
                 <p className="text-[11px] text-text-secondary px-3 pt-2 pb-2">
-                  Drag to reorder. Tap × to remove.
+                  Drag to reorder. Tap x to remove.
                 </p>
                 <Reorder.Group
                   axis="y"
@@ -229,67 +252,12 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* NOTIFICATIONS */}
-        <section>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Notifications
-          </h3>
-          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-            {NOTIFICATION_OPTIONS.map((item, i) => {
-              const on = notifPrefs[item.key];
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => setPref(item.key, !on)}
-                  className={`w-full flex items-center justify-between p-4 hover:bg-surface-secondary/40 transition-colors ${
-                    i > 0 ? "border-t border-border" : ""
-                  }`}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-text-primary">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-text-tertiary">{item.desc}</p>
-                  </div>
-                  <div
-                    className={`w-11 h-6 rounded-full relative transition-colors ${
-                      on ? "bg-primary-500" : "bg-surface-secondary"
-                    }`}
-                  >
-                    <motion.div
-                      layout
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm ${
-                        on ? "left-[22px]" : "left-0.5"
-                      }`}
-                    />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
         {/* ABOUT */}
         <section className="pb-6">
           <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
             About
           </h3>
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-            <button className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary">
-              <span className="text-sm text-text-primary">Privacy policy</span>
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            <div className="border-t border-border" />
-            <button className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary">
-              <span className="text-sm text-text-primary">Terms of service</span>
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            <div className="border-t border-border" />
             <button
               onClick={handleResetOnboarding}
               className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-surface-secondary"
@@ -302,7 +270,7 @@ export default function SettingsPage() {
             <div className="border-t border-border" />
             <div className="px-4 py-3.5 flex items-center justify-between">
               <span className="text-sm text-text-tertiary">Version</span>
-              <span className="text-xs text-text-tertiary">Nova 0.3.0</span>
+              <span className="text-xs text-text-tertiary">Vero 1.0.0</span>
             </div>
           </div>
         </section>

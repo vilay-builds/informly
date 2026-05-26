@@ -73,7 +73,6 @@ export interface StockViewData {
   currency: "$" | "₹";
   price: number;
   changePercent: number;
-  stats: { label: string; value: string }[];
   metrics: { label: string; value: string; explanation: string }[];
   signal: Signal;
   signalReason: string;
@@ -709,29 +708,7 @@ export default function StockView({ stock }: { stock: StockViewData }) {
           </motion.section>
         )}
 
-        {/* Section 6: Market stats (quick reference grid) */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.38 }}
-          className="bg-surface rounded-2xl p-5 border border-border"
-        >
-          <h3 className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">
-            Market snapshot
-          </h3>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3.5">
-            {stock.stats.map((stat) => (
-              <div key={stat.label} className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary">{stat.label}</span>
-                <span className="text-xs font-semibold text-text-primary tabular-nums">
-                  {stat.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Section 7: About the company */}
+        {/* Section 6: About the company */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -797,6 +774,17 @@ export default function StockView({ stock }: { stock: StockViewData }) {
             </div>
           </motion.section>
         )}
+
+        {/* SEBI Disclaimer */}
+        <div className="pb-8 pt-2">
+          <p className="text-[10px] text-text-tertiary leading-relaxed text-center px-4">
+            Vero provides educational information only, not investment advice.
+            Stock analysis is AI-generated and may contain errors. Always
+            consult a SEBI-registered investment advisor before making
+            financial decisions. Past performance does not guarantee future
+            results.
+          </p>
+        </div>
       </main>
     </div>
   );

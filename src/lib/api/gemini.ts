@@ -1,4 +1,4 @@
-// Gemini Flash 2.5-lite wrapper for beginner-focused stock insights.
+// Gemini Flash 2.5-lite wrapper for Vero's beginner-focused stock insights.
 // Free tier: 1000 RPD on flash-lite. Cached aggressively per ticker.
 
 import "server-only";

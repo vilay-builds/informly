@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import * as React from "react";
 import { motion, PanInfo, AnimatePresence } from "framer-motion";
@@ -15,8 +15,9 @@ const ViewTransition = (React as any).ViewTransition as React.ComponentType<{
 import { useRouter } from "next/navigation";
 import { Stock } from "@/lib/content/types";
 import { Sparkline } from "@/components/Sparkline";
-import { generateChartData } from "@/components/StockChart";
 import { easing } from "@/lib/motion";
+import { useTheme } from "@/components/ThemeProvider";
+import { themes } from "@/lib/themes";
 
 interface WatchlistCarouselProps {
   stocks: Stock[];
@@ -30,9 +31,7 @@ const signalLabel = {
 };
 
 // Friendly Indian numbering. Yahoo gives raw market cap in rupees.
-// Convert to "₹2.5 Lakh Crore" rather than "₹2.5L Cr".
 function friendlyMarketCap(value: string): string {
-  // Incoming examples: "₹19.8L Cr", "₹500 Cr", "₹500", "—"
   if (!value || value === "—") return "Unknown";
   const m = value.match(/^[₹$]([\d,.]+)\s*([A-Za-z]+)?\s*([A-Za-z]+)?$/);
   if (!m) return value;
@@ -56,7 +55,6 @@ function friendlyMarketCap(value: string): string {
 function sizeTier(value: string): { label: string; tone: "lg" | "md" | "sm" } {
   if (!value || value === "—" || value === "Unknown")
     return { label: "Listed", tone: "sm" };
-  // Detect lakh crore for large caps
   if (/lakh\s*cr/i.test(value)) {
     const m = value.match(/([\d.]+)/);
     const lkhCr = m ? parseFloat(m[1]) : 0;
@@ -73,20 +71,53 @@ function sizeTier(value: string): { label: string; tone: "lg" | "md" | "sm" } {
   return { label: "Listed", tone: "sm" };
 }
 
+// Fetch real 30-day history for sparklines
+function useSparklineData(tickers: string[]) {
+  const [data, setData] = useState<Record<string, number[]>>({});
+  const tickerKey = tickers.join(",");
+
+  useEffect(() => {
+    if (tickers.length === 0) return;
+    let cancelled = false;
+
+    // Fetch history for each ticker in parallel
+    Promise.all(
+      tickers.map(async (ticker) => {
+        try {
+          const res = await fetch(
+            `/api/stocks/history?ticker=${encodeURIComponent(ticker)}&range=1mo`
+          );
+          if (!res.ok) return { ticker, points: [] };
+          const json = (await res.json()) as { data: number[] };
+          return { ticker, points: json.data || [] };
+        } catch {
+          return { ticker, points: [] };
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return;
+      const map: Record<string, number[]> = {};
+      for (const r of results) {
+        if (r.points.length > 0) map[r.ticker] = r.points;
+      }
+      setData(map);
+    });
+
+    return () => { cancelled = true; };
+  }, [tickerKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return data;
+}
+
 export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const dragDistance = useRef(0);
+  const { themeKey } = useTheme();
+  const themeColor = themes[themeKey].primary[600];
 
-  const chartData = useMemo(
-    () =>
-      stocks.map((s) => {
-        const totalChange = (s.change / 100) * 3.2;
-        const startPrice = s.price / (1 + totalChange);
-        return generateChartData(startPrice, s.price, 30, 0.012);
-      }),
-    [stocks]
-  );
+  // Fetch real sparkline data for all watchlist tickers
+  const sparklineData = useSparklineData(stocks.map((s) => s.ticker));
 
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
@@ -141,7 +172,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
             if (!isVisible) return null;
 
             const isPositive = stock.change >= 0;
-            const data = chartData[i];
+            const realData = sparklineData[stock.ticker];
             const marketCapStat = stock.stats.find((s) => s.label === "Market Cap");
             const friendlyCap = marketCapStat
               ? friendlyMarketCap(marketCapStat.value)
@@ -180,10 +211,6 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                   <div
                     className="h-full rounded-3xl overflow-hidden flex flex-col relative bg-surface border border-border"
                     style={{
-                      // Solid surface + subtle themed gradient overlay using the
-                      // user's theme primary color. The direction tint (green/red)
-                      // is layered on top very gently so the card stays inviting
-                      // but never see-through.
                       backgroundImage: `
                         linear-gradient(135deg, color-mix(in srgb, var(--color-primary-500) 5%, transparent), transparent 55%),
                         linear-gradient(315deg, ${
@@ -228,7 +255,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                       </span>
                       {dayRange && (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-secondary text-text-secondary whitespace-nowrap tabular-nums">
-                          ₹{dayRange.value}
+                          {dayRange.value}
                         </span>
                       )}
                     </div>
@@ -238,7 +265,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                   <div className="px-5 pb-2">
                     <p className="text-[34px] leading-none font-bold text-text-primary tracking-tight tabular-nums">
                       <span className="text-base text-text-tertiary mr-1 align-baseline">
-                        ₹
+                        {stock.currency}
                       </span>
                       {formatPrice(stock.price)}
                     </p>
@@ -247,7 +274,7 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                         isPositive ? "text-success-500" : "text-red-500"
                       }`}
                     >
-                      {isPositive ? "▲" : "▼"} {Math.abs(stock.change)}% today
+                      {isPositive ? "+" : ""}{stock.change}% today
                     </p>
                   </div>
 
@@ -259,7 +286,21 @@ export function WatchlistCarousel({ stocks, region }: WatchlistCarouselProps) {
                       </span>
                     </div>
                     <div className="-mx-2">
-                      <Sparkline data={data} isPositive={isPositive} height={110} />
+                      {realData && realData.length > 2 ? (
+                        <Sparkline data={realData} isPositive={isPositive} height={110} themeColor={themeColor} />
+                      ) : (
+                        <div className="h-[110px] flex items-center justify-center">
+                          <div className="flex gap-1">
+                            {[0, 1, 2].map((j) => (
+                              <div
+                                key={j}
+                                className="w-1.5 h-1.5 rounded-full bg-text-tertiary/30 animate-pulse"
+                                style={{ animationDelay: `${j * 150}ms` }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

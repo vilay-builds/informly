@@ -1,12 +1,12 @@
 {
-  "name": "Nova — News that makes sense",
-  "short_name": "Nova",
-  "description": "A calm, AI-powered companion for understanding world events and financial markets.",
+  "name": "Vero — The calm way to follow stocks",
+  "short_name": "Vero",
+  "description": "A calm, AI-powered companion for understanding Indian stock markets. Built for beginners.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f4f5fc",
-  "theme_color": "#5b6ef2",
+  "theme_color": "#9b7ec8",
   "icons": [
     {
       "src": "/icon-192.png",

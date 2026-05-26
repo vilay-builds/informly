@@ -45,36 +45,6 @@ export default async function StockPage({
     recentNewsTitles: news.slice(0, 3).map((n) => n.title),
   });
 
-  const stats = [
-    {
-      label: "Market Cap",
-      value: formatCompact(quote.marketCap, quote.currency),
-    },
-    {
-      label: "Volume",
-      value:
-        quote.volume != null
-          ? quote.volume >= 1e6
-            ? `${(quote.volume / 1e6).toFixed(1)}M`
-            : quote.volume.toLocaleString()
-          : "—",
-    },
-    {
-      label: "Day Range",
-      value:
-        quote.dayLow && quote.dayHigh
-          ? `${quote.dayLow.toFixed(2)} – ${quote.dayHigh.toFixed(2)}`
-          : "—",
-    },
-    {
-      label: "52W Range",
-      value:
-        quote.weekLow && quote.weekHigh
-          ? `${quote.weekLow.toFixed(2)} – ${quote.weekHigh.toFixed(2)}`
-          : "—",
-    },
-  ];
-
   const metricList = [
     { label: "P/E Ratio", value: quote.peRatio?.toFixed(2) ?? "N/A" },
     {
@@ -125,7 +95,6 @@ export default async function StockPage({
     currency: quote.currency,
     price: quote.price,
     changePercent: quote.changePercent,
-    stats,
     metrics,
     signal: commentary.signal,
     signalReason: commentary.signalReason,

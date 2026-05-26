@@ -1,6 +1,6 @@
 import { Transition, Variants } from "framer-motion";
 
-// Canonical motion language for Nova.
+// Canonical motion language for Vero.
 // Use these everywhere — don't hand-tune timings per component.
 
 export const easing = {

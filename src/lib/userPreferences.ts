@@ -5,8 +5,6 @@ import { useEffect, useState, useCallback } from "react";
 export interface UserPreferences {
   name: string;
   marketRegion: "us" | "india";
-  interests: string[];
-  readingMode: 0 | 1 | 2 | 3; // 0=Beginner, 3=Expert
   onboardedAt: number | null;
 }
 
@@ -15,8 +13,6 @@ const KEY = "nova-user-prefs";
 const defaults: UserPreferences = {
   name: "",
   marketRegion: "india",
-  interests: [],
-  readingMode: 1,
   onboardedAt: null,
 };
 

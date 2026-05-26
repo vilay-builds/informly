@@ -85,7 +85,7 @@ export default function OnboardingPage() {
             >
               <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mb-8 shadow-lg">
                 <span className="text-3xl font-bold text-white font-[family-name:var(--font-display)]">
-                  N
+                  V
                 </span>
               </div>
               <h1 className="text-4xl font-bold text-text-primary font-[family-name:var(--font-display)] mb-4 leading-tight">
@@ -105,6 +105,11 @@ export default function OnboardingPage() {
               >
                 Skip for now
               </button>
+              <p className="mt-8 text-[10px] text-text-tertiary leading-relaxed max-w-xs mx-auto">
+                Vero provides educational information only, not investment
+                advice. Always consult a SEBI-registered advisor before
+                making financial decisions.
+              </p>
             </motion.div>
           )}
 
@@ -301,7 +306,7 @@ export default function OnboardingPage() {
                 what the company does, and what to watch out for.
               </p>
               <Button size="lg" fullWidth onClick={finish}>
-                Open Nova
+                Open Vero
               </Button>
             </motion.div>
           )}

@@ -117,26 +117,20 @@ export function useWatchlist(region: "us" | "india" = "india") {
   return { list, isWatched, add, remove, toggle, reorder };
 }
 
-// ============ NOTIFICATIONS ============
-export interface NotificationPrefs {
-  marketAlerts: boolean;
-  weeklyDigest: boolean;
-}
-
-const notifStore = makeStore<NotificationPrefs>("nova-notif-prefs", {
-  marketAlerts: true,
-  weeklyDigest: true,
+// ============ ROLLING TICKER PREFERENCE ============
+const tickerStore = makeStore<{ enabled: boolean }>("nova-ticker-pref", {
+  enabled: false,
 });
 
-export function useNotificationPrefs() {
-  const [state, update] = notifStore.useStore();
+export function useTickerPreference() {
+  const [state, update] = tickerStore.useStore();
 
-  const setPref = useCallback(
-    (key: keyof NotificationPrefs, value: boolean) => {
-      update((prev) => ({ ...prev, [key]: value }));
+  const setEnabled = useCallback(
+    (enabled: boolean) => {
+      update({ enabled });
     },
     [update]
   );
 
-  return { prefs: state, setPref };
+  return { enabled: state.enabled, setEnabled };
 }

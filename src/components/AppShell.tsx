@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserPreferences } from "@/lib/userPreferences";
+import { useTickerPreference } from "@/lib/persistence";
 import { CommandPalette } from "@/components/CommandPalette";
 import { StockTicker } from "@/components/StockTicker";
 
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { prefs, hydrated } = useUserPreferences();
+  const { enabled: tickerEnabled } = useTickerPreference();
 
   useEffect(() => {
     if (!hydrated) return;
@@ -27,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const showTicker = TICKER_ROUTES.some((r) =>
+  const showTicker = tickerEnabled && TICKER_ROUTES.some((r) =>
     r === "/" ? pathname === "/" : pathname.startsWith(r)
   );
 

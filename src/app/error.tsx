@@ -12,7 +12,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Nova error:", error);
+    console.error("Vero error:", error);
   }, [error]);
 
   return (
@@ -36,7 +36,7 @@ export default function GlobalError({
           </Button>
           <Link href="/">
             <Button variant="ghost" fullWidth>
-              Back to your feed
+              Back to your watchlist
             </Button>
           </Link>
         </div>
