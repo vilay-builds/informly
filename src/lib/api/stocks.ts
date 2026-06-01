@@ -4,7 +4,7 @@ import "server-only";
 import YahooFinance from "yahoo-finance2";
 
 // v3 requires explicit instantiation per app.
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 // Loose Yahoo quote shape — yahoo-finance2's union types fight TypeScript narrowing.
 type YQuote = {
@@ -131,9 +131,11 @@ export async function fetchBusinessSummary(
 ): Promise<string | null> {
   const symbol = toYahooSymbol(ticker, region);
   try {
-    const result = (await yahooFinance.quoteSummary(symbol, {
-      modules: ["assetProfile"],
-    })) as unknown as {
+    const result = (await yahooFinance.quoteSummary(
+      symbol,
+      { modules: ["assetProfile"] },
+      { validateResult: false }
+    )) as unknown as {
       assetProfile?: { longBusinessSummary?: string };
     };
     return result?.assetProfile?.longBusinessSummary ?? null;
@@ -182,7 +184,11 @@ export async function fetchStockQuote(
 ): Promise<LiveStock | null> {
   const symbol = toYahooSymbol(ticker, region);
   try {
-    const raw = (await yahooFinance.quote(symbol)) as unknown as YQuote | YQuote[];
+    const raw = (await yahooFinance.quote(
+      symbol,
+      {},
+      { validateResult: false }
+    )) as unknown as YQuote | YQuote[];
     const q = Array.isArray(raw) ? raw[0] : raw;
     if (!q || q.regularMarketPrice == null) return null;
     return {
@@ -254,11 +260,15 @@ export async function fetchPriceHistory(
   };
 
   try {
-    const result = (await yahooFinance.chart(symbol, {
-      period1: periodMap[range](),
-      period2: new Date(),
-      interval: intervalMap[range],
-    })) as unknown as { quotes?: Array<{ date: Date | string; close: number | null }> };
+    const result = (await yahooFinance.chart(
+      symbol,
+      {
+        period1: periodMap[range](),
+        period2: new Date(),
+        interval: intervalMap[range],
+      },
+      { validateResult: false }
+    )) as unknown as { quotes?: Array<{ date: Date | string; close: number | null }> };
     if (!result.quotes) return [];
 
     const all = result.quotes
@@ -324,7 +334,11 @@ export async function fetchIndices(
   const list = region === "india" ? INDIA_INDICES : US_INDICES;
   const symbols = list.map((i) => i.symbol);
   try {
-    const raw = (await yahooFinance.quote(symbols)) as unknown as YQuote[];
+    const raw = (await yahooFinance.quote(
+      symbols,
+      {},
+      { validateResult: false }
+    )) as unknown as YQuote[];
     const arr = Array.isArray(raw) ? raw : [raw];
     const map = new Map<string, YQuote>();
     arr.forEach((q) => {
@@ -359,7 +373,11 @@ export async function fetchManyQuotes(
   if (tickers.length === 0) return [];
   const symbols = tickers.map((t) => toYahooSymbol(t, region));
   try {
-    const raw = (await yahooFinance.quote(symbols)) as unknown as YQuote[];
+    const raw = (await yahooFinance.quote(
+      symbols,
+      {},
+      { validateResult: false }
+    )) as unknown as YQuote[];
     const arr = Array.isArray(raw) ? raw : [raw];
     return arr
       .map((q) => {
