@@ -148,10 +148,11 @@ export async function fetchStockNews(
 ): Promise<{ title: string; link: string; publisher: string; publishedAt: string }[]> {
   const symbol = toYahooSymbol(ticker, region);
   try {
-    const result = (await yahooFinance.search(symbol, {
-      newsCount: 5,
-      quotesCount: 0,
-    })) as unknown as {
+    const result = (await yahooFinance.search(
+      symbol,
+      { newsCount: 5, quotesCount: 0 },
+      { validateResult: false }
+    )) as unknown as {
       news?: Array<{
         title?: string;
         link?: string;

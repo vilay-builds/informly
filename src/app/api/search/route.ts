@@ -21,10 +21,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = (await yahooFinance.search(q, {
-      quotesCount: 8,
-      newsCount: 0,
-    })) as unknown as { quotes?: YQuoteSearchHit[] };
+    // validateResult:false — Yahoo's live response no longer matches the
+    // library's strict schema (e.g. typeDisp "Equity" vs expected "equity"),
+    // which otherwise throws and makes every search return empty.
+    const result = (await yahooFinance.search(
+      q,
+      { quotesCount: 8, newsCount: 0 },
+      { validateResult: false }
+    )) as unknown as { quotes?: YQuoteSearchHit[] };
 
     const stocks = (result.quotes ?? [])
       .filter(
